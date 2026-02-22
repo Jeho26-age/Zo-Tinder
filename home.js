@@ -20,13 +20,11 @@ let userStack = [];
 let currentUserIndex = 0;
 let myData = {};
 
-// --- GLOBAL ACTIONS ---
+// --- WINDOW ACTIONS ---
 
-// New: View Profile Button Logic
 window.viewProfile = () => {
     const targetUser = userStack[currentUserIndex];
     if (targetUser) {
-        // Redirects to user profile with their ID in the URL
         window.location.href = `user-view.html?id=${targetUser.uid}`;
     }
 };
@@ -43,7 +41,8 @@ window.nope = () => {
     }, 400);
 };
 
-window.accept = async () => {
+// NEW: Follow Logic (Digital Business Card Send)
+window.followUser = async () => {
     const card = document.getElementById('mainCard');
     const targetUser = userStack[currentUserIndex];
 
@@ -51,20 +50,34 @@ window.accept = async () => {
         const myId = auth.currentUser.uid;
         const targetId = targetUser.uid;
         
+        // Prepare the full data package for the other user's notification
+        const followData = {
+            from: myId,
+            username: myData.username || "Unknown",
+            photo: myData.photoURL || "",
+            age: myData.age || "??",
+            gender: myData.gender || "",
+            veng: myData.veng || "",
+            khaw: myData.khaw || "",
+            interests: myData.interests || {},
+            lookingFor: myData.lookingFor || "Thian tur",
+            timestamp: Date.now()
+        };
+
         try {
-            await update(ref(database, `users/${targetId}`), { profileLikes: increment(1) });
-            await set(ref(database, `likes/${myId}/${targetId}`), { timestamp: Date.now() });
+            // 1. Send the full request card to their node
+            await set(ref(database, `follow_requests/${targetId}/${myId}`), followData);
             
-            // Notification Trigger
-            await set(ref(database, `pending_requests/${targetId}/${myId}`), {
-                from: myId,
-                username: myData.username || "Unknown",
-                photo: myData.photoURL || "",
-                timestamp: Date.now()
-            });
-        } catch (e) { console.error(e); }
+            // 2. Track who I am following in my own node
+            await set(ref(database, `following/${myId}/${targetId}`), { timestamp: Date.now() });
+            
+            // 3. Increment their follower count for the Leaderboard
+            await update(ref(database, `users/${targetId}`), { followersCount: increment(1) });
+
+        } catch (e) { console.error("Follow Error:", e); }
     }
 
+    // Slide out and show next card instantly
     card.classList.add('slide-right');
     setTimeout(() => {
         card.classList.remove('slide-right');
@@ -73,7 +86,7 @@ window.accept = async () => {
     }, 400);
 };
 
-// --- DATA FETCHING ---
+// --- SMART DISCOVERY ---
 
 auth.onAuthStateChanged((user) => {
     if (user) {
@@ -86,7 +99,7 @@ auth.onAuthStateChanged((user) => {
 
 function startDiscovery() {
     const usersRef = ref(database, 'users');
-    off(usersRef); // Clean old listeners
+    off(usersRef);
 
     onValue(usersRef, (snapshot) => {
         const allUsers = snapshot.val();
@@ -94,22 +107,40 @@ function startDiscovery() {
 
         const tempStack = [];
         const myId = auth.currentUser.uid;
+        const myInterests = myData.interests ? Object.values(myData.interests) : [];
+        const myAge = parseInt(myData.age) || 20;
 
         for (let id in allUsers) {
             if (id === myId) continue;
             let user = allUsers[id];
             user.uid = id;
 
-            // Simple Filter (Since Age Bar is gone)
-            // Show opposite gender if looking for love, else show everyone
-            if (myData.lookingFor !== "Thian tur") {
-                if (user.gender === myData.gender) continue;
-            }
+            // 1. GENDER & INTENT FILTER
+            if (myData.lookingFor !== "Thian tur" && user.gender === myData.gender) continue;
+            if (user.lookingFor !== myData.lookingFor) continue;
+
+            // 2. LOCATION & INTEREST BYPASS
+            const sameVeng = user.veng && myData.veng && user.veng.toLowerCase() === myData.veng.toLowerCase();
+            const sameKhaw = user.khaw && myData.khaw && user.khaw.toLowerCase() === myData.khaw.toLowerCase();
             
+            let interestMatch = false;
+            if (user.interests) {
+                const userInterests = Object.values(user.interests);
+                interestMatch = myInterests.some(i => userInterests.includes(i));
+            }
+
+            // Must match location OR interests
+            if (!sameVeng && !sameKhaw && !interestMatch) continue;
+
+            // 3. AGE FILTER (+/- 8 years)
+            const userAge = parseInt(user.age) || 0;
+            if (Math.abs(userAge - myAge) > 8) continue;
+
             tempStack.push(user);
         }
         
         userStack = tempStack.sort(() => Math.random() - 0.5);
+        currentUserIndex = 0;
         renderCard();
     }, { onlyOnce: true });
 }
@@ -118,57 +149,46 @@ function renderCard() {
     const card = document.getElementById('mainCard');
     const scanningUI = document.getElementById('scanningUI');
     const photo = document.getElementById('currentPhoto');
-    const statusLabel = document.getElementById('statusLabel');
     
-    // Check if we ran out of users
-    if (userStack.length === 0 || currentUserIndex >= userStack.length) {
+    if (!userStack || userStack.length === 0 || currentUserIndex >= userStack.length) {
         if (scanningUI) scanningUI.style.display = 'flex';
-        // Use class to hide instead of .value (which caused your error)
-        photo.classList.add('hidden-content');
-        document.querySelector('.profile-info').classList.add('hidden-content');
-        if (statusLabel) statusLabel.innerText = "SCANNING...";
-        
-        // Auto-refresh after 8 seconds
-        setTimeout(() => {
-            currentUserIndex = 0;
-            startDiscovery();
-        }, 8000);
+        if (card) card.style.display = 'none';
         return;
     }
 
-    // Show Content
     if (scanningUI) scanningUI.style.display = 'none';
-    photo.classList.remove('hidden-content');
-    document.querySelector('.profile-info').classList.remove('hidden-content');
+    if (card) card.style.display = 'block';
 
     const user = userStack[currentUserIndex];
-    const genderIcon = user.gender === "Mipa" ? "♂️" : "♀️";
 
-    document.getElementById('currentName').innerText = `${user.username}, ${user.age} ${genderIcon}`;
-    document.getElementById('currentLooking').innerText = `Duh zawng: ${user.lookingFor || 'Thian tur'}`;
-    document.getElementById('currentBio').innerText = user.bio ? `"${user.bio}"` : "";
+    photo.src = "https://via.placeholder.com/300x400?text=Zawn_Mek..."; 
+    if (user.photoURL) {
+        const img = new Image();
+        img.src = user.photoURL;
+        img.onload = () => { photo.src = user.photoURL; };
+    }
+
+    const genderIcon = user.gender === "Mipa" ? "♂️" : "♀️";
+    document.getElementById('currentName').innerText = `${user.username || 'User'}, ${user.age || '??'} ${genderIcon}`;
     
-    // Khaw & Veng from your Firebase Screenshot
+    document.getElementById('currentLooking').innerText = `Duh zawng: ${user.lookingFor || 'Thian tur'}`;
+    // Add this inside the info update section of renderCard
+document.getElementById('currentBio').innerText = user.bio || "";
+
+    
     const khaw = user.khaw || "";
     const veng = user.veng || "";
-    document.getElementById('currentVeng').innerText = `📍 ${khaw}${khaw && veng ? ', ' : ''}${veng}`;
-    
-    photo.src = user.photoURL || "https://via.placeholder.com/400x600?text=No+Photo";
+    document.getElementById('currentVeng').innerText = `📍 ${veng}${veng && khaw ? ', ' : ''}${khaw}`;
 
-    // Interests
     const tags = document.getElementById('interestTags');
     tags.innerHTML = "";
     if (user.interests) {
-        Object.values(user.interests).forEach(interest => {
+        const list = Array.isArray(user.interests) ? user.interests : Object.values(user.interests);
+        list.slice(0, 3).forEach(interest => {
             const span = document.createElement('span');
             span.className = 'interest-tag';
             span.innerText = interest;
             tags.appendChild(span);
         });
-    }
-    
-    if (statusLabel) {
-        statusLabel.innerText = user.isOnline ? "ONLINE" : "OFFLINE";
-        statusLabel.style.color = user.isOnline ? "#00ff00" : "#888";
     }
 }

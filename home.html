@@ -2,163 +2,819 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Zo-Tinder | Home</title>
-    <script type="module" src="global-notifier.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        
-        body { 
-            background: radial-gradient(circle at center, #1a0505, #080808); 
-            color: white; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
+        :root {
+            --red: #FF3B1F;
+            --rose: #FF5F57;
+            --ember: #FF8C42;
+            --dark: #080608;
+            --surface: #120e10;
+            --card: #1a1218;
+            --border: rgba(255,255,255,0.06);
+            --text: #F5EEF0;
+            --muted: rgba(245,238,240,0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        #galaxy {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            height: 100vh;
+            height: 100dvh;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            overflow: hidden;
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(255,59,31,0.12) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            right: -10%;
+            width: 40vw;
+            height: 40vw;
+            background: radial-gradient(circle, rgba(255,140,66,0.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            padding: 14px 18px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            background: rgba(8,6,8,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            height: 28px;
+            width: 28px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid rgba(255,59,31,0.3);
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #FF8C42 0%, #FF3B1F 60%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions { display: flex; gap: 4px; }
+
+        .icon-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--text);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .icon-btn:active { background: rgba(255,59,31,0.15); border-color: rgba(255,59,31,0.3); }
+
+        /* ── TOP NAV ── */
+        .top-nav {
+            display: flex;
+            padding: 10px 14px;
+            gap: 8px;
+            background: rgba(8,6,8,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 99;
+        }
+
+        .top-nav button {
+            flex: 1;
+            padding: 8px 6px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
             overflow: hidden;
         }
 
-        /* Header */
-        .header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(10, 10, 10, 0.9); z-index: 100; flex-shrink: 0; }
-        .logo { height: 28px; border-radius: 5px; }
-        .nav-right { display: flex; gap: 15px; }
-        .icon-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        .top-nav button.active {
+            background: rgba(255,59,31,0.12);
+            border-color: rgba(255,59,31,0.4);
+            color: #FF8C42;
+        }
 
-        .top-nav { display: flex; justify-content: space-around; padding: 8px; background: rgba(20, 20, 20, 0.5); gap: 10px; flex-shrink: 0; }
-        .top-nav button { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid rgba(255, 75, 43, 0.3); background: rgba(30, 30, 30, 0.8); color: white; font-weight: bold; font-size: 0.65rem; text-transform: uppercase; }
-        .top-nav button.active { background: #ff4b2b; }
+        .top-nav button.active::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #FF3B1F, transparent);
+            border-radius: 2px;
+        }
 
-        /* Middle Section: Shrinkable */
-        .discover-container { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: space-evenly; /* Spreads elements out to keep footer down */
-            padding: 10px;
+        /* ── DISCOVER CONTAINER ── */
+        .discover-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 5px 5px;
             overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
 
-        /* CARD MADE SMALLER TO FIT SCREEN */
-        .card-stack { 
-            position: relative; 
-            width: 100%; 
-            max-width: 300px; 
-            height: 400px; /* Reduced height from 480px */
-            perspective: 1000px; 
+        /* ── CARD STACK ── */
+        .card-stack {
+            position: relative;
+            width: 76vw;
+            max-width: 250px;
+            aspect-ratio: 3/4.2;
+            max-height: 330px;
         }
-        
-        .profile-card { 
-            position: absolute; width: 100%; height: 100%; border-radius: 15px; 
-            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); 
-            background: #111; box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
-            transition: transform 0.5s ease-out, opacity 0.4s; 
+
+        .card-stack::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            transform: translateY(8px) scale(0.96);
+            z-index: 0;
+        }
+
+        .card-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            transform: translateY(4px) scale(0.98);
+            z-index: 1;
+        }
+
+        .profile-card {
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #111;
+            z-index: 2;
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(255,255,255,0.04) inset,
+                0 1px 0 rgba(255,255,255,0.08) inset;
+            transition: transform 0.15s ease;
+            animation: card-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.08) 0%,
+                transparent 30%,
+                transparent 42%,
+                rgba(0,0,0,0.75) 72%,
+                rgba(0,0,0,0.97) 100%
+            );
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .profile-info {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 14px 14px 12px;
             z-index: 2;
         }
-        .profile-img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .profile-info { 
-            position: absolute; bottom: 0; width: 100%; padding: 15px; 
-            background: linear-gradient(transparent, rgba(0,0,0,0.9) 60%);
-            display: flex; flex-direction: column; 
+
+        .profile-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 1px;
         }
-        .profile-name { font-size: 1.3rem; font-weight: bold; } 
-        .profile-detail { color: #ff4b2b; font-size: 0.75rem; font-weight: bold; margin-top: 2px; }
-        .profile-veng { color: #aaa; font-size: 0.75rem; margin-top: 2px; } 
-        .profile-bio { color: #ccc; font-size: 0.75rem; margin-top: 2px; font-style: italic; line-height: 1.1; }
 
-        #interestTags { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
-        .interest-tag { background: rgba(255, 255, 255, 0.1); padding: 2px 8px; border-radius: 10px; font-size: 0.6rem; border: 1px solid rgba(255,255,255,0.1); }
-
-        .status-badge { position: absolute; top: 10px; right: 10px; padding: 3px 8px; background: rgba(0,0,0,0.6); border-radius: 12px; font-size: 0.55rem; font-weight: bold; z-index: 10; border: 1px solid #444; }
-
-        /* ACTION BUTTONS */
-        .action-row { display: flex; gap: 15px; align-items: center; flex-shrink: 0; }
-        .btn-circle { width: 50px; height: 50px; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; background: rgba(20, 20, 20, 0.9); transition: 0.2s; }
-        
-        .btn-x { color: #ff416c; border: 1.5px solid #ff416c; }
-        .btn-check { color: #4caf50; border: 1.5px solid #4caf50; }
-        .btn-profile { width: 65px; height: 65px; font-size: 1.5rem; color: #fff; border: 2px solid #fff; background: rgba(255,255,255,0.05); }
-
-        /* Footer - FIXED TO BOTTOM */
-        .footer { 
-            display: flex; 
-            justify-content: space-around; 
-            padding: 10px; 
-            background: #0a0a0a; 
-            border-top: 1px solid #222; 
-            flex-shrink: 0; 
-            width: 100%;
+        .profile-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            line-height: 1;
         }
-        .foot-btn { background: none; border: none; color: #444; font-size: 1.2rem; cursor: pointer; }
-        .foot-btn.active { color: #ff4b2b; }
 
-        /* Scanning UI */
+        .profile-age {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+        }
+
+        /* ── BIO ── */
+        .profile-bio {
+            font-size: 0.62rem;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.45;
+            margin: 5px 0 5px;
+            font-weight: 400;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .profile-looking {
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin: 4px 0 2px;
+            background: linear-gradient(90deg, #FF8C42, #FF3B1F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+
+        .profile-veng {
+            color: rgba(255,255,255,0.35);
+            font-size: 0.62rem;
+            margin-bottom: 7px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .profile-veng::before {
+            content: '📍';
+            font-size: 0.55rem;
+            filter: grayscale(1) opacity(0.5);
+        }
+
+        .tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .interest-tag {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 0.57rem;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 0.3px;
+        }
+
+        /* ── LIVE BADGE ── */
+        .live-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background: rgba(255,59,31,0.88);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            font-size: 0.48rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .live-dot {
+            width: 5px;
+            height: 5px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+        /* ── ACTION ROW ── */
+        .action-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-top: 18px;
+            padding-bottom: 4px;
+        }
+
+        .btn-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-circle.nope { border-color: rgba(255,65,108,0.3); }
+        .btn-circle.nope:active { background: rgba(255,65,108,0.15); transform: scale(0.9) rotate(-8deg); }
+        .btn-circle.view:active { background: rgba(255,255,255,0.1); transform: scale(0.9); }
+
+        .btn-follow {
+            padding: 0 32px;
+            height: 52px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, #FF8C42 0%, #FF3B1F 100%);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow:
+                0 8px 25px rgba(255,59,31,0.35),
+                0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-follow::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            50%, 100% { left: 160%; }
+        }
+
+        .btn-follow:active { transform: scale(0.94); box-shadow: 0 4px 12px rgba(255,59,31,0.3); }
+
+        /* ── FOOTER ── */
+        .footer {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 68px;
+            background: rgba(8,6,8,0.95);
+            border-top: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 200;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,59,31,0.4), transparent);
+        }
+
+        .foot-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.55);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .foot-btn.active {
+            color: var(--red);
+            filter: drop-shadow(0 0 8px rgba(255,59,31,0.5));
+        }
+
+        .foot-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--red);
+            border-radius: 50%;
+        }
+
+        .foot-btn:active { transform: scale(0.85); }
+
+        /* ── SLIDE ANIMATIONS ── */
+        .slide-left  { transform: translateX(-150%) rotate(-20deg) !important; opacity: 0 !important; transition: 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide-right { transform: translateX(150%)  rotate(20deg)  !important; opacity: 0 !important; transition: 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* ── SCANNING UI ── */
         .scanning-container {
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 10;
         }
-        .radar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #ff4b2b; animation: radar-pulse 2s infinite linear; }
-        @keyframes radar-pulse {
-            0% { transform: scale(0.5); opacity: 1; }
-            100% { transform: scale(1.4); opacity: 0; }
-        }
-        .scanning-text { margin-top: 15px; color: #ff4b2b; font-size: 0.7rem; letter-spacing: 1px; }
 
-        /* Animation Helpers */
-        .slide-left { transform: translateX(-150%) rotate(-20deg) !important; opacity: 0; }
-        .slide-right { transform: translateX(150%) rotate(20deg) !important; opacity: 0; }
-        .hidden-content { display: none !important; }
+        .radar-box {
+            position: relative;
+            width: 90px; height: 90px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scanning-logo {
+            position: absolute;
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            z-index: 2;
+            animation: logo-pulse 2s infinite ease-in-out;
+        }
+
+        .radar {
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--red);
+            z-index: 1;
+            animation: radar-pulse 2s infinite linear;
+        }
+
+        .radar:nth-child(3) { animation-delay: 0.7s; }
+
+        @keyframes radar-pulse {
+            0%   { transform: scale(0.4); opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        @keyframes logo-pulse {
+            0%, 100% { transform: scale(1);    opacity: 0.5; }
+            50%       { transform: scale(1.08); opacity: 0.9; }
+        }
+
+        .scanning-label {
+            color: var(--red);
+            font-size: 0.6rem;
+            margin-top: 22px;
+            letter-spacing: 3px;
+            font-weight: 700;
+            animation: fade-pulse 1.5s infinite;
+        }
+
+        @keyframes fade-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        @keyframes card-in {
+            from { transform: translateY(30px) scale(0.95); opacity: 0; }
+            to   { transform: translateY(0)    scale(1);    opacity: 1; }
+        }
+
     </style>
 </head>
+<!-- ═══════════════════════════════════════════════════════
+     PART 2 — continues directly from home_part1.html
+     ═══════════════════════════════════════════════════════ -->
 <body>
+
+    <canvas id="galaxy"></canvas>
+
+    <!-- ── HEADER ── -->
     <header class="header">
-        <img src="Zo-Tinderlogo.jpg" class="logo">
-        <div class="nav-right">
-            <button class="icon-btn" onclick="location.href='notification.html'">🔔</button>
-            <button class="icon-btn" onclick="location.href='settings.html'">⚙️</button>
+        <div class="logo-wrap">
+            <img src="Zo-Tinderlogo.jpg" class="logo" alt="Logo">
+            <span class="logo-text">Zo-Tinder</span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="location.href='notification.html'">🌟</button>
+            <button class="icon-btn" onclick="location.href='settings.html'">📱</button>
         </div>
     </header>
 
+    <!-- ── TOP NAV ── -->
     <nav class="top-nav">
         <button class="active">Discover</button>
         <button onclick="location.href='group.html'">Group</button>
         <button onclick="location.href='leaderboard.html'">Leaderboard</button>
     </nav>
 
+    <!-- ── MAIN ── -->
     <main class="discover-container">
         <div class="card-stack">
+
+            <!-- Profile Card -->
             <div class="profile-card" id="mainCard">
-                <div id="statusLabel" class="status-badge">ONLINE</div>
-                <img src="" class="profile-img" id="currentPhoto">
-                <div class="profile-info" id="cardContent">
-                    <div class="profile-name" id="currentName"></div>
-                    <div class="profile-detail" id="currentLooking"></div>
-                    <div class="profile-veng" id="currentVeng"></div>
+                <img src="" class="profile-img" id="currentPhoto" alt="">
+
+                <div class="profile-info">
+                    <!-- Name + age -->
+                    <div class="profile-name-row">
+                        <div class="profile-name" id="currentName"></div>
+                        <div class="profile-age"  id="currentAge"></div>
+                    </div>
+
+                    <!-- Bio (new) -->
                     <div class="profile-bio" id="currentBio"></div>
-                    <div id="interestTags"></div>
+
+                    <!-- Looking for -->
+                    <div class="profile-looking" id="currentLooking"></div>
+
+                    <!-- Location -->
+                    <div class="profile-veng" id="currentVeng"></div>
+
+                    <!-- Interest tags -->
+                    <div class="tags-row" id="interestTags"></div>
                 </div>
             </div>
+
+            <!-- Scanning UI -->
             <div class="scanning-container" id="scanningUI">
-                <div class="radar"></div>
-                <div class="scanning-text">ZAWN MEK A NI...</div>
+                <div class="radar-box">
+                    <img src="Zo-Tinderlogo.jpg" class="scanning-logo" alt="">
+                    <div class="radar"></div>
+                    <div class="radar"></div>
+                </div>
+                <p class="scanning-label">ZAWN MEK...</p>
             </div>
+
         </div>
 
+        <!-- Action Buttons -->
         <div class="action-row">
-            <button class="btn-circle btn-x" onclick="window.nope()">✕</button>
-            <button class="btn-circle btn-profile" id="profileBtn" onclick="window.viewProfile()">👤</button>
-            <button class="btn-circle btn-check" onclick="window.accept()">✓</button>
+            <button class="btn-circle nope" onclick="window.nope()">✕</button>
+            <button class="btn-circle view"  onclick="window.viewProfile()">👤</button>
+            <button class="btn-follow"       onclick="window.followUser()">FOLLOW</button>
         </div>
     </main>
 
+    <!-- ── FOOTER ── -->
     <footer class="footer">
         <button class="foot-btn active" onclick="location.href='home.html'">🔥</button>
-        <button class="foot-btn" onclick="location.href='store.html'">💎</button>
-        <button class="foot-btn" onclick="location.href='photo-battle.html'">⚔️</button>
-        <button class="foot-btn" onclick="location.href='message.html'">💬</button>
-        <button class="foot-btn" onclick="location.href='profile.html'">👤</button>
+        <button class="foot-btn"        onclick="location.href='store.html'">🛍️</button>
+        <button class="foot-btn"        onclick="location.href='photo-battle.html'">⚔️</button>
+        <button class="foot-btn"        onclick="location.href='message.html'">📨</button>
+        <button class="foot-btn"        onclick="location.href='profile.html'">🪪</button>
     </footer>
 
+    <!-- Your existing app logic -->
     <script type="module" src="home.js"></script>
+
+    <!-- ── GALAXY ANIMATION ── -->
+    <script>
+    (function () {
+        const canvas = document.getElementById('galaxy');
+        const ctx    = canvas.getContext('2d');
+        let W, H, stars = [], shootingStars = [], nebulae = [];
+
+        function resize() {
+            W = canvas.width  = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            init();
+        }
+
+        function rand(a, b) { return Math.random() * (b - a) + a; }
+
+        function init() {
+            stars = []; nebulae = []; shootingStars = [];
+
+            // Nebula blobs
+            const hues = [0, 20, 200, 260, 320];
+            for (let i = 0; i < 5; i++) {
+                nebulae.push({
+                    x: rand(0, W), y: rand(0, H),
+                    r: rand(80, 200),
+                    hue: hues[i],
+                    alpha: rand(0.03, 0.09)
+                });
+            }
+
+            // Stars — 3 depth layers
+            const layers = [
+                { count: 220, size: [0.2, 0.6],  speed: 0.008, alpha: [0.2, 0.55] },
+                { count: 80,  size: [0.6, 1.2],  speed: 0.018, alpha: [0.4, 0.8]  },
+                { count: 30,  size: [1.2, 2.2],  speed: 0.035, alpha: [0.6, 1.0]  }
+            ];
+
+            layers.forEach(({ count, size, speed, alpha }) => {
+                for (let i = 0; i < count; i++) {
+                    const base = rand(alpha[0], alpha[1]);
+                    const rng  = Math.random();
+                    stars.push({
+                        x: rand(0, W), y: rand(0, H),
+                        r: rand(size[0], size[1]),
+                        alpha: base, baseAlpha: base,
+                        twinkleSpeed:  rand(0.005, 0.022),
+                        twinkleOffset: rand(0, Math.PI * 2),
+                        drift: speed,
+                        color: rng < 0.15
+                            ? 'rgba(255,200,160,'
+                            : rng < 0.35
+                            ? 'rgba(160,190,255,'
+                            : 'rgba(255,255,255,'
+                    });
+                }
+            });
+        }
+
+        function spawnShootingStar() {
+            const angle = rand(20, 50) * Math.PI / 180;
+            const speed = rand(6, 14);
+            shootingStars.push({
+                x: rand(W * 0.1, W * 0.9),
+                y: rand(0, H * 0.35),
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                alpha: 1,
+                trail: []
+            });
+        }
+
+        let frame = 0;
+        function draw() {
+            requestAnimationFrame(draw);
+            frame++;
+
+            // Deep space background
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#06040a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Nebulae
+            nebulae.forEach(n => {
+                const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+                g.addColorStop(0, `hsla(${n.hue},70%,55%,${n.alpha})`);
+                g.addColorStop(1, `hsla(${n.hue},70%,30%,0)`);
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Milky Way diagonal band
+            const mw = ctx.createLinearGradient(0, H * 0.2, W, H * 0.8);
+            mw.addColorStop(0,   'rgba(80,60,120,0)');
+            mw.addColorStop(0.3, 'rgba(80,60,120,0.04)');
+            mw.addColorStop(0.5, 'rgba(100,80,160,0.07)');
+            mw.addColorStop(0.7, 'rgba(80,60,120,0.04)');
+            mw.addColorStop(1,   'rgba(80,60,120,0)');
+            ctx.fillStyle = mw;
+            ctx.fillRect(0, 0, W, H);
+
+            // Stars
+            stars.forEach(s => {
+                s.alpha = s.baseAlpha + Math.sin(frame * s.twinkleSpeed + s.twinkleOffset) * s.baseAlpha * 0.4;
+                s.y += s.drift * 0.3;
+                if (s.y > H) { s.y = 0; s.x = rand(0, W); }
+
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fillStyle = s.color + Math.min(1, Math.max(0, s.alpha)) + ')';
+                ctx.fill();
+
+                // Glow halo for larger stars
+                if (s.r > 1.5) {
+                    const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3.5);
+                    glow.addColorStop(0, s.color + (s.alpha * 0.3) + ')');
+                    glow.addColorStop(1, s.color + '0)');
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r * 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Spawn shooting stars periodically
+            if (frame % 180 === 0 && Math.random() < 0.7) spawnShootingStar();
+
+            shootingStars = shootingStars.filter(ss => ss.alpha > 0.02);
+            shootingStars.forEach(ss => {
+                ss.trail.push({ x: ss.x, y: ss.y });
+                if (ss.trail.length > 18) ss.trail.shift();
+                ss.x += ss.vx;
+                ss.y += ss.vy;
+                ss.alpha -= 0.032;
+
+                // Trail
+                for (let i = 0; i < ss.trail.length - 1; i++) {
+                    const p = i / ss.trail.length;
+                    ctx.beginPath();
+                    ctx.moveTo(ss.trail[i].x,     ss.trail[i].y);
+                    ctx.lineTo(ss.trail[i + 1].x, ss.trail[i + 1].y);
+                    ctx.strokeStyle = `rgba(255,220,180,${p * ss.alpha * 0.9})`;
+                    ctx.lineWidth   = p * 2;
+                    ctx.stroke();
+                }
+
+                // Head glow
+                const hg = ctx.createRadialGradient(ss.x, ss.y, 0, ss.x, ss.y, 5);
+                hg.addColorStop(0, `rgba(255,240,200,${ss.alpha})`);
+                hg.addColorStop(1, 'rgba(255,240,200,0)');
+                ctx.fillStyle = hg;
+                ctx.beginPath();
+                ctx.arc(ss.x, ss.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        draw();
+    })();
+    </script>
+
 </body>
 </html>
