@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Join</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0000;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ── BOKEH BACKGROUND ── */
+        .bokeh-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bokeh-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 30%, rgba(180,20,0,0.55) 0%, transparent 55%),
+                        radial-gradient(ellipse at 80% 70%, rgba(150,10,0,0.45) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 50%, rgba(80,0,0,0.3) 0%, transparent 70%);
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: floatOrb linear infinite;
+            pointer-events: none;
+        }
+
+        .orb:nth-child(1)  { width:160px;height:160px;background:rgba(220,40,0,0.6);left:5%;top:5%;animation-duration:18s; }
+        .orb:nth-child(2)  { width:220px;height:220px;background:rgba(180,20,0,0.5);right:8%;top:15%;animation-duration:24s;animation-delay:-6s; }
+        .orb:nth-child(3)  { width:130px;height:130px;background:rgba(255,60,20,0.45);left:60%;top:60%;animation-duration:20s;animation-delay:-10s; }
+        .orb:nth-child(4)  { width:180px;height:180px;background:rgba(200,30,0,0.4);left:15%;bottom:10%;animation-duration:22s;animation-delay:-4s; }
+        .orb:nth-child(5)  { width:100px;height:100px;background:rgba(255,80,30,0.5);right:20%;bottom:25%;animation-duration:16s;animation-delay:-8s; }
+        .orb:nth-child(6)  { width:90px;height:90px;background:rgba(230,50,0,0.4);left:40%;top:5%;animation-duration:26s;animation-delay:-2s; }
+
+        @keyframes floatOrb {
+            0%   { transform: translate(0,0) scale(1); }
+            25%  { transform: translate(30px,-20px) scale(1.08); }
+            50%  { transform: translate(-20px,30px) scale(0.95); }
+            75%  { transform: translate(25px,15px) scale(1.05); }
+            100% { transform: translate(0,0) scale(1); }
+        }
+
+        /* Animated sparkle dots */
+        .stars {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .star {
+            position: absolute;
+            width: 3px; height: 3px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%,100% { opacity:0; transform:scale(0.5); }
+            50%      { opacity:0.9; transform:scale(1.4); }
+        }
+
+        /* ── ALERT ── */
+        #customAlert {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .alert-box {
+            width: 82%;
+            max-width: 300px;
+            padding: 28px 22px;
+            background: linear-gradient(145deg, #1a0505, #0f0000);
+            border: 1.5px solid rgba(255,75,43,0.6);
+            border-radius: 22px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(255,60,0,0.25);
+        }
+        .alert-box h3 { color: #ff4b2b; font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; font-size: 1.2rem; margin-bottom: 10px; }
+        .alert-box p  { color: #ccc; font-size: 0.9rem; line-height: 1.5; }
+        .alert-btn {
+            margin-top: 18px;
+            padding: 10px 28px;
+            background: linear-gradient(135deg, #ff4b2b, #ff416c);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* ── CARD ── */
+        .auth-container {
+            width: 90%;
+            max-width: 390px;
+            padding: 38px 28px 32px;
+            background: rgba(10, 0, 0, 0.6);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 36px;
+            border: 1px solid rgba(255,80,50,0.2);
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.6),
+                0 0 60px rgba(255,50,20,0.12),
+                inset 0 1px 0 rgba(255,120,80,0.15);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Subtle top glow line */
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 20%; right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,100,60,0.7), transparent);
+            border-radius: 50%;
+        }
+
+        /* ── VIEWS ── */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeUp 0.5s ease both; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── TITLE ── */
+        h2 {
+            font-family: 'Rajdhani', sans-serif;
+            color: #ff4b2b;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            text-shadow: 0 0 30px rgba(255,75,43,0.5);
+        }
+
+        /* ── INPUTS ── */
+        .input-group {
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 50px 16px 18px;
+            background: rgba(8, 0, 0, 0.75);
+            border: 1.5px solid rgba(255,60,30,0.18);
+            border-radius: 16px;
+            color: white;
+            outline: none;
+            font-size: 1rem;
+            font-family: 'Nunito', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input::placeholder { color: rgba(200,160,150,0.55); }
+        input:focus {
+            border-color: rgba(255,75,43,0.55);
+            box-shadow: 0 0 18px rgba(255,60,30,0.2);
+        }
+
+        /* Eye toggle button */
+        .toggle-pw {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: rgba(255,120,80,0.7);
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .toggle-pw:hover { color: #ff4b2b; }
+
+        /* Custom SVG eye icon */
+        .eye-icon { width: 22px; height: 22px; }
+
+        /* ── BUTTON ── */
+        .btn-main {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 900;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.05rem;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 8px 24px rgba(255,65,108,0.4), 0 4px 0 #7a1010;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-main::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+            border-radius: inherit;
+        }
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 4px 12px rgba(255,65,108,0.3), 0 1px 0 #7a1010;
+        }
+
+        /* ── STATUS ── */
+        #status-msg {
+            margin-top: 14px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            min-height: 20px;
+            transition: color 0.3s;
+        }
+        #status-msg.error { color: #ff6b4a; }
+        #status-msg.success { color: #4aff8a; }
+        #status-msg.info { color: rgba(200,150,140,0.7); }
+
+        /* Loading spinner inside button */
+        .btn-main.loading { opacity: 0.75; pointer-events: none; }
+        .btn-main.loading::before {
+            content: '';
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* login link */
+        .login-link {
+            margin-top: 18px;
+            font-size: 0.85rem;
+            color: rgba(200,150,140,0.6);
+        }
+        .login-link a {
+            color: #ff6b4a;
+            text-decoration: none;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Bokeh background -->
+<div class="bokeh-bg">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+</div>
+
+<!-- Sparkle stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Alert -->
+<div id="customAlert">
+    <div class="alert-box">
+        <h3 id="alertTitle">ZO-TINDER</h3>
+        <p id="alertMsg"></p>
+        <button class="alert-btn" onclick="closeAlert()">AW LE</button>
+    </div>
+</div>
+
+<!-- Card -->
+<div class="auth-container">
+
+    <!-- Step 1: Email input -->
+    <div id="step1" class="view active">
+        <h2>Join Zo-Tinder</h2>
+
+        <div class="input-group">
+            <input type="email" id="email" placeholder="I Gmail luhna...">
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Password siam rawh">
+            <button type="button" class="toggle-pw" onclick="togglePw('password', this)" aria-label="Show password">
+                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Open eye (fingerprint-style iris) -->
+                    <ellipse cx="12" cy="12" rx="10" ry="6"/>
+                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M12 9.5 Q13.5 12 12 14.5 Q10.5 12 12 9.5"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password2" placeholder="Password nawn rawh">
+            <button type="button" class="toggle-pw" onclick="togglePw('password2', this)" aria-label="Show confirm password">
+                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="12" rx="10" ry="6"/>
+                    <circle cx="12" cy="12" r="2.5"/>
+                    <path d="M12 9.5 Q13.5 12 12 14.5 Q10.5 12 12 9.5"/>
+                </svg>
+            </button>
+        </div>
+
+        <button class="btn-main" id="createBtn" onclick="createAccount()">Create Account</button>
+        <p id="status-msg" class="info"></p>
+        <p class="login-link">Account nei tawh? <a href="signin.html">Sign In</a></p>
+    </div>
+
+</div>
+
+<script>
+    /* ── Sparkle stars ── */
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 28; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = `
+            left:${Math.random()*100}%;
+            top:${Math.random()*100}%;
+            animation-duration:${2+Math.random()*4}s;
+            animation-delay:-${Math.random()*5}s;
+            width:${1+Math.random()*3}px;
+            height:${1+Math.random()*3}px;
+            opacity:${0.3+Math.random()*0.5};
+        `;
+        starsEl.appendChild(s);
+    }
+
+    /* ── Eye toggle ── */
+    function togglePw(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+
+        // Swap icon based on state
+        btn.innerHTML = isHidden
+            ? `<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                 <line x1="3" y1="3" x2="21" y2="21"/>
+                 <path d="M10.58 10.58A2 2 0 0 0 14 12a2 2 0 0 0-3.42-1.42"/>
+                 <path d="M9.36 5.51A10 10 0 0 1 12 5c7 0 10 7 10 7a17.4 17.4 0 0 1-2.35 3.07"/>
+                 <path d="M6.62 6.62A14.7 14.7 0 0 0 2 12s3 7 10 7a9.9 9.9 0 0 0 5.38-1.62"/>
+               </svg>`
+            : `<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                 <ellipse cx="12" cy="12" rx="10" ry="6"/>
+                 <circle cx="12" cy="12" r="2.5"/>
+                 <path d="M12 9.5 Q13.5 12 12 14.5 Q10.5 12 12 9.5"/>
+               </svg>`;
+    }
+
+    /* ── Alert ── */
+    window.showMizoAlert = (msg) => {
+        document.getElementById('alertMsg').innerText = msg;
+        document.getElementById('customAlert').style.display = 'flex';
+    };
+    window.closeAlert = () => {
+        document.getElementById('customAlert').style.display = 'none';
+    };
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword }
+        from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+        authDomain: "zo-tinder.firebaseapp.com",
+        databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "zo-tinder",
+        storageBucket: "zo-tinder.firebasestorage.app",
+        messagingSenderId: "866061631708",
+        appId: "1:866061631708:web:f2c70a3989032095803419"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const statusMsg = document.getElementById('status-msg');
+    const createBtn = document.getElementById('createBtn');
+
+    function setStatus(msg, type = 'info') {
+        statusMsg.textContent = msg;
+        statusMsg.className = type;
+    }
+
+    window.createAccount = async () => {
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm  = document.getElementById('password2').value;
+
+        // Validation
+        if (!email.includes('@')) {
+            setStatus('Gmail dik tak dah rawh.', 'error'); return;
+        }
+        if (password.length < 6) {
+            setStatus('Password hi letter 6 theuh a nih a ngai.', 'error'); return;
+        }
+        if (password !== confirm) {
+            setStatus('Password pahnih hi inang lo. Leh en rawh.', 'error'); return;
+        }
+
+        // Loading state
+        createBtn.classList.add('loading');
+        createBtn.textContent = 'Creating...';
+        setStatus('', 'info');
+
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            setStatus('Account siam zo! Redirect hmasa ber...', 'success');
+            setTimeout(() => {
+                window.location.href = 'account-setup.html';
+            }, 1200);
+        } catch (error) {
+            createBtn.classList.remove('loading');
+            createBtn.textContent = 'Create Account';
+
+            // Friendly error messages
+            const code = error.code;
+            if (code === 'auth/email-already-in-use') {
+                setStatus('Gmail hi hman tawh a ni. Sign In rawh!', 'error');
+            } else if (code === 'auth/invalid-email') {
+                setStatus('Gmail dik tak dah rawh.', 'error');
+            } else if (code === 'auth/weak-password') {
+                setStatus('Password pawimawh zawk dah rawh.', 'error');
+            } else {
+                setStatus('Harsatna: ' + error.message, 'error');
+            }
+        }
+    };
+</script>
+</body>
+</html>

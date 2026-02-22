@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Welcome</title>
+    <style>
+        /* CSS RESET & MOBILE FIX */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(45deg, #080808, #1a0505, #080808);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+            position: relative;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* FLOATING PARTICLES */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 75, 43, 0.4), transparent);
+            border-radius: 50%;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-120px) translateX(60px); opacity: 0.7; }
+        }
+
+        /* LIGHT RAYS */
+        .light-rays {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .light-ray {
+            position: absolute;
+            width: 2px;
+            height: 200px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 75, 43, 0.3), transparent);
+            animation: rayMove 5s infinite ease-in-out;
+        }
+
+        @keyframes rayMove {
+            0%, 100% { opacity: 0; transform: translateY(-300px); }
+            50% { opacity: 1; transform: translateY(100vh); }
+        }
+
+        /* GLOWING CIRCLES BACKGROUND */
+        .glow-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 75, 43, 0.2), transparent);
+            animation: expandFade 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes expandFade {
+            0% { transform: scale(0); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+            animation: containerFadeIn 1s ease-out;
+        }
+
+        @keyframes containerFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* LOGO WRAPPER WITH GLOW */
+        .logo-wrapper {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 20px;
+            position: relative;
+            animation: logoEntrance 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes logoEntrance {
+            0% { 
+                transform: scale(0) rotate(-180deg); 
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% { 
+                transform: scale(1) rotate(0deg); 
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        /* GLOWING RING AROUND LOGO */
+        .logo-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 30px;
+            background: linear-gradient(45deg, #ff4b2b, #ff416c, #ff4b2b);
+            opacity: 0.4;
+            filter: blur(15px);
+            animation: ringPulse 2s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes ringPulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+        }
+
+        /* ROTATING BORDER */
+        .logo-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 30px;
+            background: linear-gradient(45deg, transparent, #ff4b2b, transparent);
+            animation: rotateBorder 3s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes rotateBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .main-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 25px;
+            box-shadow: 0 0 30px rgba(255, 75, 43, 0.5), 0 10px 40px rgba(0, 0, 0, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* SHIMMER EFFECT ON LOGO */
+        .shimmer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 25px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .shimmer-overlay::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .greeting {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+            font-weight: 900;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ff4b2b, #ff416c, #ff4b2b);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientText 3s ease infinite, textFadeIn 1s ease-out 0.5s backwards;
+            text-shadow: 0 0 30px rgba(255, 75, 43, 0.5);
+        }
+
+        @keyframes gradientText {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translateY(20px); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        /* LOADING BAR CONTAINER */
+        .loader-container {
+            position: relative;
+            animation: loaderFadeIn 1s ease-out 1s backwards;
+        }
+
+        @keyframes loaderFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader-bg {
+            width: 250px;
+            height: 8px;
+            background: rgba(34, 34, 34, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 75, 43, 0.2);
+            border: 1px solid rgba(255, 75, 43, 0.2);
+        }
+
+        /* GLOWING PROGRESS BAR */
+        .loader-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4b2b, #ff416c, #ff4b2b);
+            background-size: 200% 100%;
+            animation: fillBar 6s linear forwards, shimmerBar 1.5s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(255, 75, 43, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        /* MOVING SHINE ON PROGRESS BAR */
+        .loader-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            animation: progressShine 1s ease-in-out infinite;
+        }
+
+        @keyframes progressShine {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+
+        @keyframes shimmerBar {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes fillBar {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* PERCENTAGE DISPLAY */
+        .percentage {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ff4b2b;
+            text-shadow: 0 0 10px rgba(255, 75, 43, 0.8);
+            transition: left 0.3s ease;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+            animation: statusPulse 2s ease-in-out infinite, statusFadeIn 1s ease-out 1.5s backwards;
+            letter-spacing: 1px;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes statusFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 0.6; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        /* SPARKLES */
+        .sparkle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkleFloat 3s ease-in-out infinite;
+            pointer-events: none;
+            box-shadow: 0 0 6px #fff, 0 0 12px #ff4b2b;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { 
+                transform: translateY(0) scale(0);
+                opacity: 0;
+            }
+            50% { 
+                transform: translateY(-100px) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FLOATING PARTICLES -->
+    <div class="particles" id="particles"></div>
+
+    <!-- LIGHT RAYS -->
+    <div class="light-rays">
+        <div class="light-ray" style="left: 15%; animation-delay: 0s;"></div>
+        <div class="light-ray" style="left: 40%; animation-delay: 1.5s;"></div>
+        <div class="light-ray" style="left: 65%; animation-delay: 3s;"></div>
+        <div class="light-ray" style="left: 85%; animation-delay: 4.5s;"></div>
+    </div>
+
+    <!-- GLOWING CIRCLES -->
+    <div class="glow-circle" style="width: 300px; height: 300px; top: 20%; left: 10%; animation-delay: 0s;"></div>
+    <div class="glow-circle" style="width: 400px; height: 400px; bottom: 10%; right: 5%; animation-delay: 2s;"></div>
+
+    <div class="loading-container">
+        <div class="logo-wrapper">
+            <img src="Zo-Tinderlogo.jpg" alt="Logo" class="main-logo">
+            <div class="shimmer-overlay"></div>
+        </div>
+        
+        <h2 class="greeting">Zo-Tinder</h2>
+
+        <div class="loader-container">
+            <div class="percentage" id="percentage">0%</div>
+            <div class="loader-bg">
+                <div class="loader-fill" id="loaderFill"></div>
+            </div>
+        </div>
+        <p class="status">Zo-Tinder & Social Media ah kan lo lawm lut a che ...</p>
+    </div>
+
+    <script>
+        // CREATE FLOATING PARTICLES
+        const particlesContainer = document.getElementById('particles');
+        for(let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.width = Math.random() * 80 + 30 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            particle.style.animationDuration = Math.random() * 8 + 6 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // CREATE SPARKLES
+        const container = document.querySelector('.loading-container');
+        for(let i = 0; i < 15; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = Math.random() * 100 + '%';
+            sparkle.style.top = Math.random() * 100 + '%';
+            sparkle.style.animationDelay = Math.random() * 3 + 's';
+            sparkle.style.animationDuration = Math.random() * 2 + 2 + 's';
+            container.appendChild(sparkle);
+        }
+
+        // PERCENTAGE COUNTER
+        const percentageEl = document.getElementById('percentage');
+        const loaderFill = document.getElementById('loaderFill');
+        let progress = 0;
+        
+        const updateProgress = setInterval(() => {
+            progress += 1.67; // 100 / 60 frames per second * 6 seconds
+            if(progress >= 100) {
+                progress = 100;
+                clearInterval(updateProgress);
+            }
+            percentageEl.textContent = Math.floor(progress) + '%';
+            percentageEl.style.left = (progress * 2.5) - 20 + 'px'; // Move with progress
+        }, 100);
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+            authDomain: "zo-tinder.firebaseapp.com",
+            databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "zo-tinder",
+            storageBucket: "zo-tinder.firebasestorage.app",
+            messagingSenderId: "866061631708",
+            appId: "1:866061631708:web:f2c70a3989032095803419"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        let nextPath = "signin.html";
+        let isAuthReady = false;
+
+        onAuthStateChanged(auth, (user) => {
+            nextPath = user ? "homepage.html" : "signin.html";
+            isAuthReady = true;
+        });
+
+        // 6 second delay
+        setTimeout(() => {
+            const check = setInterval(() => {
+                if (isAuthReady) {
+                    clearInterval(check);
+                    window.location.href = nextPath;
+                }
+            }, 100);
+        }, 6000);
+    </script>
+</body>
+</html>

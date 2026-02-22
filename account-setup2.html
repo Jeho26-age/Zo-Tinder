@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Setup Step 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0000; color: white;
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; padding: 90px 0 50px;
+            position: relative; overflow-x: hidden;
+        }
+
+        /* ── BOKEH BG ── */
+        .bokeh-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+        .bokeh-bg::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse at 15% 25%, rgba(180,20,0,0.55) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 65%, rgba(150,10,0,0.45) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(80,0,0,0.3) 0%, transparent 70%);
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(40px); animation: floatOrb linear infinite; pointer-events: none; }
+        .orb:nth-child(1) { width:160px;height:160px;background:rgba(220,40,0,0.55);left:3%;top:8%;animation-duration:18s; }
+        .orb:nth-child(2) { width:210px;height:210px;background:rgba(180,20,0,0.45);right:5%;top:12%;animation-duration:24s;animation-delay:-6s; }
+        .orb:nth-child(3) { width:120px;height:120px;background:rgba(255,60,20,0.4);left:65%;top:55%;animation-duration:20s;animation-delay:-10s; }
+        .orb:nth-child(4) { width:170px;height:170px;background:rgba(200,30,0,0.38);left:10%;bottom:12%;animation-duration:22s;animation-delay:-4s; }
+        .orb:nth-child(5) { width:95px;height:95px;background:rgba(255,80,30,0.45);right:18%;bottom:20%;animation-duration:16s;animation-delay:-8s; }
+        .orb:nth-child(6) { width:85px;height:85px;background:rgba(230,50,0,0.38);left:42%;top:3%;animation-duration:26s;animation-delay:-2s; }
+        @keyframes floatOrb {
+            0%   { transform:translate(0,0) scale(1); }
+            25%  { transform:translate(28px,-18px) scale(1.07); }
+            50%  { transform:translate(-18px,28px) scale(0.95); }
+            75%  { transform:translate(22px,14px) scale(1.04); }
+            100% { transform:translate(0,0) scale(1); }
+        }
+        .stars { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle ease-in-out infinite; }
+        @keyframes twinkle { 0%,100%{opacity:0;transform:scale(0.5);}50%{opacity:0.85;transform:scale(1.4);} }
+
+        /* ── PROGRESS ── */
+        .progress-container {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 20px 24px 16px;
+            background: linear-gradient(to bottom, rgba(8,0,0,0.95) 60%, transparent);
+            z-index: 100; text-align: center;
+        }
+        .progress-track { width:100%;max-width:360px;height:5px;background:rgba(255,255,255,0.08);border-radius:10px;margin:0 auto 8px;overflow:hidden; }
+        .progress-fill { width:100%;height:100%;background:linear-gradient(90deg,#ff4b2b,#ff416c);box-shadow:0 0 12px rgba(255,75,43,0.6);border-radius:10px; }
+        .step-label { font-family:'Rajdhani',sans-serif;font-size:0.72rem;color:#ff6b4a;letter-spacing:3px;font-weight:700; }
+
+        /* ── TOAST ── */
+        #toastContainer {
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+            z-index: 3000; display: flex; flex-direction: column; align-items: center; gap: 10px;
+            pointer-events: none; width: 90%; max-width: 360px;
+        }
+        .toast {
+            width: 100%; padding: 14px 20px; border-radius: 16px;
+            font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 700;
+            display: flex; align-items: center; gap: 12px;
+            backdrop-filter: blur(20px);
+            animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both; pointer-events: all;
+        }
+        .toast.error   { background:rgba(30,0,0,0.92);border:1.5px solid rgba(255,75,43,0.55);color:#ffb0a0;box-shadow:0 8px 30px rgba(255,50,20,0.25); }
+        .toast.success { background:rgba(0,20,5,0.92);border:1.5px solid rgba(60,220,100,0.5);color:#90ffb8;box-shadow:0 8px 30px rgba(40,200,80,0.2); }
+        .toast.info    { background:rgba(10,5,20,0.92);border:1.5px solid rgba(255,75,43,0.3);color:rgba(220,180,160,0.9);box-shadow:0 8px 30px rgba(0,0,0,0.3); }
+        .toast-icon { font-size:1.2rem; flex-shrink:0; }
+        @keyframes toastIn  { from{opacity:0;transform:translateY(-12px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);} }
+        @keyframes toastOut { from{opacity:1;transform:translateY(0) scale(1);}to{opacity:0;transform:translateY(-10px) scale(0.95);} }
+
+        /* ── CARD ── */
+        .auth-container {
+            width: 90%; max-width: 400px; padding: 36px 26px 30px;
+            background: rgba(10,0,0,0.6); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+            border-radius: 36px; border: 1px solid rgba(255,80,50,0.18);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 60px rgba(255,50,20,0.1), inset 0 1px 0 rgba(255,120,80,0.12);
+            text-align: center; position: relative; z-index: 10;
+        }
+        .auth-container::before {
+            content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,100,60,0.65), transparent);
+        }
+        h2 {
+            font-family: 'Rajdhani', sans-serif; color: #ff4b2b; font-size: 1.85rem; font-weight: 700;
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 26px;
+            text-shadow: 0 0 28px rgba(255,75,43,0.45);
+        }
+
+        /* ── SECTION LABEL ── */
+        .section-label {
+            display: block; text-align: left; margin-bottom: 8px; margin-left: 2px;
+            font-size: 0.75rem; color: rgba(200,140,120,0.7); font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        /* ── PHOTO UPLOAD ── */
+        .photo-upload-area {
+            width: 130px; height: 130px; border-radius: 50%;
+            border: 2px dashed rgba(255,75,43,0.4); margin: 0 auto 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; background: rgba(8,0,0,0.6);
+            transition: border-color 0.3s, box-shadow 0.3s; overflow: hidden;
+        }
+        .photo-upload-area:hover { border-color: rgba(255,75,43,0.7); box-shadow: 0 0 20px rgba(255,75,43,0.2); }
+        .photo-upload-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: none; }
+        .photo-upload-area.has-photo img { display: block; }
+        .photo-upload-area.has-photo .upload-placeholder { display: none; }
+        .upload-placeholder { text-align: center; pointer-events: none; }
+        .upload-placeholder svg { width: 32px; height: 32px; color: rgba(255,100,70,0.6); margin-bottom: 6px; }
+        .upload-placeholder span { font-size: 0.72rem; color: rgba(200,130,110,0.6); font-weight: 700; letter-spacing: 0.5px; }
+        #photoInput { display: none; }
+        .photo-edit-overlay {
+            position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; color: white; text-transform: uppercase;
+        }
+        .photo-upload-area.has-photo:hover .photo-edit-overlay { display: flex; }
+
+        /* ── BIO ── */
+        .bio-group { margin-bottom: 20px; text-align: left; }
+        textarea {
+            width: 100%; padding: 14px 16px; background: rgba(8,0,0,0.75);
+            border: 1.5px solid rgba(255,60,30,0.16); border-radius: 16px; color: white; outline: none;
+            font-size: 0.95rem; font-family: 'Nunito', sans-serif; resize: none; line-height: 1.5;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        textarea::placeholder { color: rgba(200,140,120,0.4); }
+        textarea:focus { border-color: rgba(255,75,43,0.5); box-shadow: 0 0 16px rgba(255,60,30,0.18); }
+        .char-count { text-align: right; font-size: 0.72rem; color: rgba(200,130,110,0.45); margin-top: 5px; }
+
+        /* ── LOOKING FOR ── */
+        .lookfor-group { margin-bottom: 20px; }
+        .lookfor-row { display: flex; flex-direction: column; gap: 10px; }
+        .lookfor-btn {
+            width: 100%; padding: 14px 16px; background: rgba(8,0,0,0.6);
+            border: 1.5px solid rgba(255,60,30,0.15); border-radius: 16px;
+            color: rgba(200,140,120,0.5); font-family: 'Nunito', sans-serif;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.25s;
+            display: flex; align-items: center; gap: 12px; text-align: left;
+        }
+        .lookfor-btn:active { transform: scale(0.98); }
+        .lookfor-btn.active { border-color: rgba(255,75,43,0.6); color: white; background: rgba(255,75,43,0.12); box-shadow: 0 0 18px rgba(255,75,43,0.18); }
+        .lookfor-btn .lf-icon { font-size: 1.3rem; flex-shrink: 0; }
+        .lookfor-btn .lf-text { display: flex; flex-direction: column; }
+        .lookfor-btn .lf-title { font-size: 0.9rem; font-weight: 700; }
+        .lookfor-btn .lf-sub { font-size: 0.72rem; font-weight: 600; opacity: 0.6; margin-top: 1px; }
+
+        /* ── INTERESTS ── */
+        .interests-group { margin-bottom: 24px; }
+        .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+        .tag {
+            padding: 9px 16px; background: rgba(8,0,0,0.6);
+            border: 1.5px solid rgba(255,60,30,0.15); border-radius: 50px;
+            color: rgba(200,140,120,0.55); font-family: 'Nunito', sans-serif;
+            font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.22s; user-select: none;
+        }
+        .tag:active { transform: scale(0.95); }
+        .tag.active { border-color: rgba(255,75,43,0.65); color: white; background: rgba(255,75,43,0.14); box-shadow: 0 0 14px rgba(255,75,43,0.18); }
+        .tag-hint { font-size: 0.72rem; color: rgba(200,130,110,0.4); margin-top: 8px; text-align: right; }
+
+        /* ── MAIN BUTTON ── */
+        .btn-main {
+            width: 100%; padding: 17px; background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+            border: none; border-radius: 16px; color: white; font-weight: 900;
+            font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 1.05rem;
+            cursor: pointer; margin-top: 4px;
+            box-shadow: 0 8px 24px rgba(255,65,108,0.38), 0 4px 0 #7a1010;
+            transition: transform 0.15s, box-shadow 0.15s; position: relative; overflow: hidden;
+        }
+        .btn-main::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 60%); }
+        .btn-main:active { transform: translateY(3px); box-shadow: 0 4px 12px rgba(255,65,108,0.28), 0 1px 0 #7a1010; }
+        .btn-main:disabled { opacity: 0.65; pointer-events: none; }
+
+        /* ── UPLOAD SPINNER ── */
+        .upload-ring {
+            position: fixed; inset: 0; z-index: 4000;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+            display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        }
+        .upload-ring.show { display: flex; }
+        .spinner { width: 56px; height: 56px; border: 3px solid rgba(255,75,43,0.2); border-top-color: #ff4b2b; border-radius: 50%; animation: spin 0.75s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .upload-ring p { font-family: 'Rajdhani', sans-serif; font-size: 1rem; letter-spacing: 2px; color: rgba(255,130,100,0.8); }
+    </style>
+</head>
+<body>
+
+<div class="bokeh-bg">
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+</div>
+<div class="stars" id="stars"></div>
+<div id="toastContainer"></div>
+
+<div class="upload-ring" id="uploadRing">
+    <div class="spinner"></div>
+    <p>UPLOADING...</p>
+</div>
+
+<div class="progress-container">
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="step-label">STEP 2 OF 2</div>
+</div>
+
+<div class="auth-container">
+    <h2>I Profile</h2>
+
+    <span class="section-label">Profile Photo</span>
+    <div class="photo-upload-area" id="photoArea" onclick="document.getElementById('photoInput').click()">
+        <img id="photoPreview" src="" alt="preview">
+        <div class="photo-edit-overlay">Change</div>
+        <div class="upload-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Photo dah rawh</span>
+        </div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*">
+
+    <div class="bio-group">
+        <span class="section-label">I Chanchin (Bio)</span>
+        <textarea id="bio" rows="3" maxlength="150" placeholder="i bio"></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 150</div>
+    </div>
+
+    <div class="lookfor-group">
+        <span class="section-label">Eng Nge I Zawn(Looking For)</span>
+        <div class="lookfor-row">
+            <button class="lookfor-btn" onclick="setLookFor('kawp pui tur')">
+                <span class="lf-icon">💍</span>
+                <span class="lf-text"><span class="lf-title">kawp pui tur</span><span class="lf-sub">Serious relationship</span></span>
+            </button>
+            <button class="lookfor-btn" onclick="setLookFor('Thian tur')">
+                <span class="lf-icon">🤝</span>
+                <span class="lf-text"><span class="lf-title">Thian tur</span><span class="lf-sub">Friendship</span></span>
+            </button>
+            <button class="lookfor-btn" onclick="setLookFor('Join ve mai mai')">
+                <span class="lf-icon">✨</span>
+                <span class="lf-text"><span class="lf-title">Join ve mai mai</span><span class="lf-sub">Just vibing / Open to anything</span></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="interests-group">
+        <span class="section-label">I Duh zawng (Interests)</span>
+        <div class="tags-wrap" id="tagsWrap"></div>
+        <div class="tag-hint" id="tagHint">0 / 5 thlang rawh</div>
+    </div>
+
+    <button class="btn-main" id="finishBtn" onclick="finishSetup()">Finish →</button>
+</div>
+
+<script>
+    /* ── Stars ── */
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 28; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;
+            animation-duration:${2+Math.random()*4}s;animation-delay:-${Math.random()*5}s;
+            width:${1+Math.random()*3}px;height:${1+Math.random()*3}px;
+            opacity:${0.3+Math.random()*0.4};`;
+        starsEl.appendChild(s);
+    }
+
+    /* ── Toast ── */
+    function showToast(msg, type = 'error', duration = 3000) {
+        const icons = { error: '✕', success: '✓', info: '•' };
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'toastOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    /* ── Photo preview ── */
+    let photoFile = null;
+    document.getElementById('photoInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Photo 5MB theuh chauh upload tur a ni.', 'error'); return;
+        }
+        photoFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            document.getElementById('photoPreview').src = ev.target.result;
+            document.getElementById('photoArea').classList.add('has-photo');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    /* ── Bio char count ── */
+    document.getElementById('bio').addEventListener('input', function() {
+        document.getElementById('charCount').textContent = this.value.length;
+    });
+
+    /* ── Looking For ── */
+    let selectedLookFor = '';
+    window.setLookFor = (val) => {
+        selectedLookFor = val;
+        document.querySelectorAll('.lookfor-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.querySelector('.lf-title').textContent === val);
+        });
+    };
+
+    /* ── Interest Tags ── */
+    const interestList = [
+        '🎵 Music', '🎬 Movies', '⚽ Sports', '🎮 Gaming',
+        '🍳 Cooking', '✈️ Travel', '📚 Reading', '🎨 Art',
+        '💃 Dancing', '📸 Photography', '🏋️ Fitness', '🌿 Nature',
+        '🎤 Singing', '🖥️ Tech', '🙏 Kristian', '🎭 Drama'
+    ];
+    const selectedTags = new Set();
+    const tagsWrap = document.getElementById('tagsWrap');
+    const tagHint = document.getElementById('tagHint');
+
+    interestList.forEach(tag => {
+        const btn = document.createElement('button');
+        btn.className = 'tag';
+        btn.textContent = tag;
+        btn.onclick = () => {
+            if (btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                selectedTags.delete(tag);
+            } else {
+                if (selectedTags.size >= 5) {
+                    showToast('5 chauh thlan theih a ni.', 'info', 1500); return;
+                }
+                btn.classList.add('active');
+                selectedTags.add(tag);
+            }
+            tagHint.textContent = `${selectedTags.size} / 5 thlang zo`;
+        };
+        tagsWrap.appendChild(btn);
+    });
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    /* ── Cloudinary ── */
+    const CLOUDINARY_CLOUD  = 'duj2rx73z';
+    const CLOUDINARY_PRESET = 'Zo-Tinder';
+    const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+        authDomain: "zo-tinder.firebaseapp.com",
+        databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "zo-tinder",
+        storageBucket: "zo-tinder.firebasestorage.app",
+        messagingSenderId: "866061631708",
+        appId: "1:866061631708:web:f2c70a3989032095803419"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+    let currentUserId = '';
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) { currentUserId = user.uid; }
+        else { window.location.href = 'join.html'; }
+    });
+
+    window.finishSetup = async () => {
+        const bio = document.getElementById('bio').value.trim();
+
+        if (!photoFile)            { showToast('Profile photo dah rawh.', 'error'); return; }
+        if (!bio)                  { showToast('I chanchin (bio) ziak rawh.', 'error'); return; }
+        if (!selectedLookFor)      { showToast('I zawn(looking for) thlang rawh.', 'error'); return; }
+        if (selectedTags.size < 1) { showToast('Interest tag 1  thlang rawh.', 'error'); return; }
+
+        const btn = document.getElementById('finishBtn');
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+        document.getElementById('uploadRing').classList.add('show');
+
+        try {
+            /* Upload photo to Cloudinary */
+            const formData = new FormData();
+            formData.append('file', photoFile);
+            formData.append('upload_preset', CLOUDINARY_PRESET);
+            formData.append('public_id', `profile_${currentUserId}`);
+            formData.append('folder', 'zo-tinder/profiles');
+
+            const cloudRes = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+            if (!cloudRes.ok) throw new Error('Photo upload a tling lo. Leh tiam rawh.');
+            const cloudData = await cloudRes.json();
+            const photoURL  = cloudData.secure_url;
+
+            /* Save everything to Firebase Realtime Database */
+            await update(ref(db, 'users/' + currentUserId), {
+                bio,
+                lookingFor: selectedLookFor,
+                interests:  Array.from(selectedTags),
+                photoURL,
+                profileComplete: true,
+                createdAt: Date.now()
+            });
+
+            document.getElementById('uploadRing').classList.remove('show');
+            showToast('Profile siam zo! Welcome to Zo-Tinder 🔥', 'success', 2000);
+            setTimeout(() => { window.location.href = 'home.html'; }, 2000);
+
+        } catch (err) {
+            document.getElementById('uploadRing').classList.remove('show');
+            btn.disabled = false;
+            btn.textContent = 'Finish →';
+            showToast('Harsatna: ' + err.message, 'error');
+        }
+    };
+</script>
+</body>
+</html>

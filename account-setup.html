@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Setup Step 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0000;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 90px 0 40px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── BOKEH BG ── */
+        .bokeh-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+        .bokeh-bg::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse at 15% 25%, rgba(180,20,0,0.55) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 65%, rgba(150,10,0,0.45) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(80,0,0,0.3) 0%, transparent 70%);
+        }
+        .orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(40px);
+            animation: floatOrb linear infinite;
+            pointer-events: none;
+        }
+        .orb:nth-child(1) { width:160px;height:160px;background:rgba(220,40,0,0.55);left:3%;top:8%;animation-duration:18s; }
+        .orb:nth-child(2) { width:210px;height:210px;background:rgba(180,20,0,0.45);right:5%;top:12%;animation-duration:24s;animation-delay:-6s; }
+        .orb:nth-child(3) { width:120px;height:120px;background:rgba(255,60,20,0.4);left:65%;top:55%;animation-duration:20s;animation-delay:-10s; }
+        .orb:nth-child(4) { width:170px;height:170px;background:rgba(200,30,0,0.38);left:10%;bottom:12%;animation-duration:22s;animation-delay:-4s; }
+        .orb:nth-child(5) { width:95px;height:95px;background:rgba(255,80,30,0.45);right:18%;bottom:20%;animation-duration:16s;animation-delay:-8s; }
+        .orb:nth-child(6) { width:85px;height:85px;background:rgba(230,50,0,0.38);left:42%;top:3%;animation-duration:26s;animation-delay:-2s; }
+        @keyframes floatOrb {
+            0%   { transform: translate(0,0) scale(1); }
+            25%  { transform: translate(28px,-18px) scale(1.07); }
+            50%  { transform: translate(-18px,28px) scale(0.95); }
+            75%  { transform: translate(22px,14px) scale(1.04); }
+            100% { transform: translate(0,0) scale(1); }
+        }
+
+        /* Stars */
+        .stars { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+        .star {
+            position: absolute; background: white; border-radius: 50%;
+            animation: twinkle ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%,100% { opacity:0; transform:scale(0.5); }
+            50%      { opacity:0.85; transform:scale(1.4); }
+        }
+
+        /* ── PROGRESS BAR ── */
+        .progress-container {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 20px 24px 16px;
+            background: linear-gradient(to bottom, rgba(8,0,0,0.95) 60%, transparent);
+            z-index: 100;
+            text-align: center;
+        }
+        .progress-track {
+            width: 100%; max-width: 360px; height: 5px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px; margin: 0 auto 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, #ff4b2b, #ff416c);
+            box-shadow: 0 0 12px rgba(255,75,43,0.6);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+        .step-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            color: #ff6b4a;
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
+
+        /* ── CARD ── */
+        .auth-container {
+            width: 90%; max-width: 400px;
+            padding: 36px 26px 30px;
+            background: rgba(10, 0, 0, 0.6);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 36px;
+            border: 1px solid rgba(255,80,50,0.18);
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.6),
+                0 0 60px rgba(255,50,20,0.1),
+                inset 0 1px 0 rgba(255,120,80,0.12);
+            text-align: center;
+            position: relative; z-index: 10;
+        }
+        .auth-container::before {
+            content: '';
+            position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,100,60,0.65), transparent);
+        }
+
+        h2 {
+            font-family: 'Rajdhani', sans-serif;
+            color: #ff4b2b;
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 26px;
+            text-shadow: 0 0 28px rgba(255,75,43,0.45);
+        }
+
+        /* ── INPUTS ── */
+        .input-group { margin-bottom: 16px; text-align: left; }
+        label {
+            display: block; margin-bottom: 7px; margin-left: 4px;
+            font-size: 0.75rem; color: rgba(200,140,120,0.7);
+            font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 15px 18px;
+            background: rgba(8,0,0,0.75);
+            border: 1.5px solid rgba(255,60,30,0.16);
+            border-radius: 16px;
+            color: white; outline: none;
+            font-size: 1rem;
+            font-family: 'Nunito', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input::placeholder { color: rgba(200,140,120,0.4); }
+        input:focus {
+            border-color: rgba(255,75,43,0.5);
+            box-shadow: 0 0 16px rgba(255,60,30,0.18);
+        }
+        input[readonly] {
+            color: #ff7a5a;
+            border-style: dashed;
+            border-color: rgba(255,75,43,0.25);
+            cursor: default;
+        }
+
+        /* ── GENDER ── */
+        .gender-row { display: flex; gap: 12px; margin-bottom: 20px; }
+        .gender-btn {
+            flex: 1; padding: 15px 10px;
+            background: rgba(8,0,0,0.6);
+            border: 1.5px solid rgba(255,60,30,0.15);
+            border-radius: 16px;
+            color: rgba(200,140,120,0.5);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem; font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .gender-btn:active { transform: scale(0.97); }
+        .gender-btn.active {
+            border-color: rgba(255,75,43,0.6);
+            color: white;
+            background: rgba(255,75,43,0.12);
+            box-shadow: 0 0 18px rgba(255,75,43,0.2);
+        }
+
+
+
+        /* ── MAIN BUTTON ── */
+        .btn-main {
+            width: 100%; padding: 17px;
+            background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+            border: none; border-radius: 16px;
+            color: white; font-weight: 900;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase; letter-spacing: 2px; font-size: 1.05rem;
+            cursor: pointer; margin-top: 8px;
+            box-shadow: 0 8px 24px rgba(255,65,108,0.38), 0 4px 0 #7a1010;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative; overflow: hidden;
+        }
+        .btn-main::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 60%);
+        }
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 4px 12px rgba(255,65,108,0.28), 0 1px 0 #7a1010;
+        }
+
+        /* ── GENDER LABEL ── */
+        .gender-label {
+            display: block; text-align: left;
+            margin-bottom: 8px; margin-left: 4px;
+            font-size: 0.75rem; color: rgba(200,140,120,0.7);
+            font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        /* ── CUSTOM ALERT / TOAST ── */
+        #toastContainer {
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+            z-index: 3000; display: flex; flex-direction: column; align-items: center; gap: 10px;
+            pointer-events: none; width: 90%; max-width: 360px;
+        }
+        .toast {
+            width: 100%; padding: 14px 20px;
+            border-radius: 16px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.9rem; font-weight: 700;
+            display: flex; align-items: center; gap: 12px;
+            backdrop-filter: blur(20px);
+            animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+            pointer-events: all;
+        }
+        .toast.error {
+            background: rgba(30,0,0,0.92);
+            border: 1.5px solid rgba(255,75,43,0.55);
+            color: #ffb0a0;
+            box-shadow: 0 8px 30px rgba(255,50,20,0.25);
+        }
+        .toast.success {
+            background: rgba(0,20,5,0.92);
+            border: 1.5px solid rgba(60,220,100,0.5);
+            color: #90ffb8;
+            box-shadow: 0 8px 30px rgba(40,200,80,0.2);
+        }
+        .toast.info {
+            background: rgba(10,5,20,0.92);
+            border: 1.5px solid rgba(255,75,43,0.3);
+            color: rgba(220,180,160,0.9);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+        .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-12px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to   { opacity: 0; transform: translateY(-10px) scale(0.95); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Bokeh BG -->
+<div class="bokeh-bg">
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+</div>
+<div class="stars" id="stars"></div>
+
+<!-- Toast container -->
+<div id="toastContainer"></div>
+
+<!-- Progress -->
+<div class="progress-container">
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="step-label">STEP 1 OF 2</div>
+</div>
+
+<!-- Card -->
+<div class="auth-container">
+    <h2>I Chanchin</h2>
+
+    <div class="input-group">
+        <label>I Hming (Username)</label>
+        <input type="text" id="username" placeholder="Hming dah rawh">
+    </div>
+
+    <div class="input-group">
+        <label>I Kum (Age)</label>
+        <input type="number" id="age" placeholder="I kum zat" min="18" max="99">
+    </div>
+
+    <span class="gender-label">I Nihna (Gender)</span>
+    <div class="gender-row">
+        <button class="gender-btn" id="mipa" onclick="setGender('Mipa')">♂ MIPA</button>
+        <button class="gender-btn" id="hmeichhia" onclick="setGender('Hmeichhia')">♀ HMEICHHIA</button>
+    </div>
+
+    <div class="input-group">
+        <label>Khaw Hming (Town/Village)</label>
+        <input type="text" id="khaw" placeholder="Ex: Aizawl, Lunglei...">
+    </div>
+
+    <div class="input-group">
+        <label>Veng Hming (Locality)</label>
+        <input type="text" id="veng" placeholder="Ex: Bawngkawn, Zotlang...">
+    </div>
+
+    <button class="btn-main" onclick="saveSetup()">Continue →</button>
+</div>
+
+<script>
+    /* ── Stars ── */
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 28; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;
+            animation-duration:${2+Math.random()*4}s;animation-delay:-${Math.random()*5}s;
+            width:${1+Math.random()*3}px;height:${1+Math.random()*3}px;opacity:${0.3+Math.random()*0.4};`;
+        starsEl.appendChild(s);
+    }
+
+    /* ── Toast system ── */
+    function showToast(msg, type = 'error', duration = 3000) {
+        const icons = { error: '✕', success: '✓', info: '•' };
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'toastOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    /* ── Gender ── */
+    let selectedGender = '';
+    window.setGender = (g) => {
+        selectedGender = g;
+        document.getElementById('mipa').classList.toggle('active', g === 'Mipa');
+        document.getElementById('hmeichhia').classList.toggle('active', g === 'Hmeichhia');
+    };
+
+    /* ── GPS removed ── */
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+        authDomain: "zo-tinder.firebaseapp.com",
+        databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "zo-tinder",
+        storageBucket: "zo-tinder.firebasestorage.app",
+        messagingSenderId: "866061631708",
+        appId: "1:866061631708:web:f2c70a3989032095803419"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let currentUserId = '';
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) { currentUserId = user.uid; }
+        else { window.location.href = 'join.html'; }
+    });
+
+    window.saveSetup = async () => {
+        const username = document.getElementById('username').value.trim();
+        const age = document.getElementById('age').value.trim();
+        const khaw = document.getElementById('khaw').value.trim();
+        const veng = document.getElementById('veng').value.trim();
+
+        if (!username) { showToast('I hming dah rawh.', 'error'); return; }
+        if (!age || age < 18) { showToast('Kum 18 theuh ngeiin register tur a ni.', 'error'); return; }
+        if (!selectedGender) { showToast('I nihna (gender) thlang rawh.', 'error'); return; }
+        if (!khaw) { showToast('Khaw hming dah rawh.', 'error'); return; }
+        if (!veng) { showToast('Veng hming dah rawh.', 'error'); return; }
+
+        const btn = document.querySelector('.btn-main');
+        btn.textContent = 'Saving...';
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
+
+        try {
+            await update(ref(db, 'users/' + currentUserId), {
+                username, age: Number(age), gender: selectedGender,
+                khaw, veng, address: `${veng}, ${khaw}`
+            });
+            showToast('Lak zo! Step 2 ah kal tur...', 'success', 1500);
+            setTimeout(() => { window.location.href = 'account-setup2.html'; }, 1600);
+        } catch (err) {
+            showToast('Harsatna: ' + err.message, 'error');
+            btn.textContent = 'Continue →';
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        }
+    };
+</script>
+</body>
+</html>
