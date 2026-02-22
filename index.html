@@ -443,7 +443,7 @@
         let isAuthReady = false;
 
         onAuthStateChanged(auth, (user) => {
-            nextPath = user ? "homepage.html" : "signin.html";
+            nextPath = user ? "home.html" : "signin.html";
             isAuthReady = true;
         });
 
