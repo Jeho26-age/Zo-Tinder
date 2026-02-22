@@ -490,9 +490,20 @@
                     window.location.href = "home.html";
                 })
                 .catch((error) => {
-                    statusMsg.innerText = "Harsatna: " + error.code;
-                    statusMsg.classList.remove('status-active');
-                });
+    console.error("Login Error:", error.code);
+    statusMsg.classList.remove('status-active');
+    
+    if (error.code === "auth/user-not-found") {
+        statusMsg.innerText = "Email hi a dik lo a ni thei.";
+    } else if (error.code === "auth/wrong-password") {
+        statusMsg.innerText = "Password a dik lo!";
+    } else if (error.code === "auth/invalid-email") {
+        statusMsg.innerText = "Gmail format a dik lo.";
+    } else {
+        statusMsg.innerText = "Harsatna: " + error.code;
+    }
+});
+
         });
     </script>
 </body>
