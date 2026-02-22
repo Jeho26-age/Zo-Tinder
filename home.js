@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getDatabase, ref, onValue, get, update, increment, set, onDisconnect } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, onValue, get, update, increment, set, off } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
@@ -19,64 +19,62 @@ const auth = getAuth(app);
 let userStack = [];
 let currentUserIndex = 0;
 let myData = {};
-let searchTimeout;
 
-// --- ATTACH ACTIONS TO WINDOW ---
-window.updateAge = (val) => {
-    document.getElementById('ageVal').innerText = "18 - " + val;
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        currentUserIndex = 0;
-        startDiscovery();
-    }, 300);
+// --- GLOBAL ACTIONS ---
+
+// New: View Profile Button Logic
+window.viewProfile = () => {
+    const targetUser = userStack[currentUserIndex];
+    if (targetUser) {
+        // Redirects to user profile with their ID in the URL
+        window.location.href = `user-view.html?id=${targetUser.uid}`;
+    }
 };
 
 window.nope = () => {
     const card = document.getElementById('mainCard');
-    if (card) {
-        card.classList.add('slide-right');
-        setTimeout(() => { currentUserIndex++; renderCard(); }, 400);
-    }
+    if (!userStack[currentUserIndex]) return;
+    
+    card.classList.add('slide-left');
+    setTimeout(() => {
+        card.classList.remove('slide-left');
+        currentUserIndex++;
+        renderCard();
+    }, 400);
 };
 
-window.like = async () => {
-    const heartBtn = document.getElementById('heartBtn');
+window.accept = async () => {
     const card = document.getElementById('mainCard');
     const targetUser = userStack[currentUserIndex];
-    
-    if (!targetUser || !auth.currentUser) return;
 
-    // UI Feedback: Shake and Color Heart
-    if (heartBtn) heartBtn.classList.add('liked');
-    if (card) card.classList.add('shake-card');
-
-    const myId = auth.currentUser.uid;
-    const targetId = targetUser.uid;
-
-    try {
-        // Increment profile likes in user data
-        await update(ref(database, `users/${targetId}`), { profileLikes: increment(1) });
-        // Save the like relationship
-        await set(ref(database, `likes/${myId}/${targetId}`), { timestamp: Date.now() });
+    if (targetUser && auth.currentUser) {
+        const myId = auth.currentUser.uid;
+        const targetId = targetUser.uid;
         
-        const check = await get(ref(database, `likes/${targetId}/${myId}`));
-        if (check.exists()) {
-            showMizoPopup("IN MATCH E!", `${targetUser.username} nen in match e!`, targetUser.photoURL);
-        }
-    } catch (e) { console.error(e); }
+        try {
+            await update(ref(database, `users/${targetId}`), { profileLikes: increment(1) });
+            await set(ref(database, `likes/${myId}/${targetId}`), { timestamp: Date.now() });
+            
+            // Notification Trigger
+            await set(ref(database, `pending_requests/${targetId}/${myId}`), {
+                from: myId,
+                username: myData.username || "Unknown",
+                photo: myData.photoURL || "",
+                timestamp: Date.now()
+            });
+        } catch (e) { console.error(e); }
+    }
 
+    card.classList.add('slide-right');
     setTimeout(() => {
-        if (card) {
-            card.classList.remove('shake-card');
-            card.classList.add('slide-left');
-        }
-        setTimeout(() => { currentUserIndex++; renderCard(); }, 400);
-    }, 600);
+        card.classList.remove('slide-right');
+        currentUserIndex++;
+        renderCard();
+    }, 400);
 };
 
-window.accept = () => window.like();
+// --- DATA FETCHING ---
 
-// --- AUTH & DATA ---
 auth.onAuthStateChanged((user) => {
     if (user) {
         get(ref(database, 'users/' + user.uid)).then((snapshot) => {
@@ -87,85 +85,90 @@ auth.onAuthStateChanged((user) => {
 });
 
 function startDiscovery() {
-    onValue(ref(database, 'users'), (snapshot) => {
+    const usersRef = ref(database, 'users');
+    off(usersRef); // Clean old listeners
+
+    onValue(usersRef, (snapshot) => {
         const allUsers = snapshot.val();
         if (!allUsers) return;
 
         const tempStack = [];
-        const ageLimit = parseInt(document.getElementById('ageSlider').value);
         const myId = auth.currentUser.uid;
 
         for (let id in allUsers) {
             if (id === myId) continue;
             let user = allUsers[id];
+            user.uid = id;
 
-            if (user.age >= 18 && user.age <= ageLimit) {
-                const commonInt = user.interests ? user.interests.filter(i => (myData.interests || []).includes(i)) : [];
-                let priority = 0;
-                if (user.isOnline) priority += 1000;
-                if (user.lookingFor === myData.lookingFor) priority += 500;
-                priority += (commonInt.length * 100);
-
-                tempStack.push({ uid: id, ...user, priority });
+            // Simple Filter (Since Age Bar is gone)
+            // Show opposite gender if looking for love, else show everyone
+            if (myData.lookingFor !== "Thian tur") {
+                if (user.gender === myData.gender) continue;
             }
+            
+            tempStack.push(user);
         }
-        userStack = tempStack.sort((a, b) => b.priority - a.priority);
+        
+        userStack = tempStack.sort(() => Math.random() - 0.5);
         renderCard();
     }, { onlyOnce: true });
 }
 
 function renderCard() {
     const card = document.getElementById('mainCard');
-    const heartBtn = document.getElementById('heartBtn');
-    const interestContainer = document.getElementById('interestTags');
+    const scanningUI = document.getElementById('scanningUI');
+    const photo = document.getElementById('currentPhoto');
+    const statusLabel = document.getElementById('statusLabel');
     
-    if(!card) return;
-
-    card.classList.remove('slide-left', 'slide-right', 'shake-card');
-    if (heartBtn) heartBtn.classList.remove('liked');
-    if (interestContainer) interestContainer.innerHTML = "";
-
+    // Check if we ran out of users
     if (userStack.length === 0 || currentUserIndex >= userStack.length) {
-        document.getElementById('currentName').innerText = "A zo ta!";
-        document.getElementById('currentPhoto').src = "https://via.placeholder.com/400x600?text=No+More+Users";
+        if (scanningUI) scanningUI.style.display = 'flex';
+        // Use class to hide instead of .value (which caused your error)
+        photo.classList.add('hidden-content');
+        document.querySelector('.profile-info').classList.add('hidden-content');
+        if (statusLabel) statusLabel.innerText = "SCANNING...";
+        
+        // Auto-refresh after 8 seconds
+        setTimeout(() => {
+            currentUserIndex = 0;
+            startDiscovery();
+        }, 8000);
         return;
     }
 
-    const user = userStack[currentUserIndex];
+    // Show Content
+    if (scanningUI) scanningUI.style.display = 'none';
+    photo.classList.remove('hidden-content');
+    document.querySelector('.profile-info').classList.remove('hidden-content');
 
-    document.getElementById('currentName').innerText = `${user.username}, ${user.age}`;
-    document.getElementById('currentLooking').innerText = `Looking for: ${user.lookingFor || 'Thian tur'}`;
+    const user = userStack[currentUserIndex];
+    const genderIcon = user.gender === "Mipa" ? "♂️" : "♀️";
+
+    document.getElementById('currentName').innerText = `${user.username}, ${user.age} ${genderIcon}`;
+    document.getElementById('currentLooking').innerText = `Duh zawng: ${user.lookingFor || 'Thian tur'}`;
     document.getElementById('currentBio').innerText = user.bio ? `"${user.bio}"` : "";
     
-    // FIXED LOCATION LOGIC: Khaw, Veng
-    const khawPart = user.khaw || "Mizoram";
-    const vengPart = user.veng || "";
-    document.getElementById('currentVeng').innerText = `📍 ${khawPart}${vengPart ? ', ' + vengPart : ''}`;
+    // Khaw & Veng from your Firebase Screenshot
+    const khaw = user.khaw || "";
+    const veng = user.veng || "";
+    document.getElementById('currentVeng').innerText = `📍 ${khaw}${khaw && veng ? ', ' : ''}${veng}`;
+    
+    photo.src = user.photoURL || "https://via.placeholder.com/400x600?text=No+Photo";
 
-    document.getElementById('currentPhoto').src = user.photoURL;
-
-    if (user.interests && Array.isArray(user.interests)) {
-        user.interests.forEach(interest => {
-            const tag = document.createElement('span');
-            tag.className = 'interest-tag';
-            tag.innerText = interest;
-            interestContainer.appendChild(tag);
+    // Interests
+    const tags = document.getElementById('interestTags');
+    tags.innerHTML = "";
+    if (user.interests) {
+        Object.values(user.interests).forEach(interest => {
+            const span = document.createElement('span');
+            span.className = 'interest-tag';
+            span.innerText = interest;
+            tags.appendChild(span);
         });
     }
     
-    const statusLabel = document.getElementById('statusLabel');
-    statusLabel.innerText = user.isOnline ? "● ONLINE" : "OFFLINE";
-    statusLabel.style.color = user.isOnline ? "#00ff00" : "#888";
-}
-
-function showMizoPopup(title, message, photo) {
-    const modal = document.createElement('div');
-    modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px;`;
-    modal.innerHTML = `
-        <img src="${photo}" style="width:150px; height:150px; border-radius:50%; border:4px solid #ff4b2b; object-fit:cover;">
-        <h1 style="color:#ff4b2b; margin-top:20px;">${title}</h1>
-        <p style="color:white; margin:10px 0 20px;">${message}</p>
-        <button onclick="this.parentElement.remove()" style="padding:12px 30px; background:#ff4b2b; color:white; border:none; border-radius:20px; font-weight:bold; cursor:pointer;">AW LE!</button>
-    `;
-    document.body.appendChild(modal);
+    if (statusLabel) {
+        statusLabel.innerText = user.isOnline ? "ONLINE" : "OFFLINE";
+        statusLabel.style.color = user.isOnline ? "#00ff00" : "#888";
+    }
 }
