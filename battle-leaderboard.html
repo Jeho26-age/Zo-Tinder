@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Hall of Fame</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #ff4b2b;
+            --accent2: #ff8c42;
+            --bg: #07050a;
+            --card: #0f0d13;
+            --gold: #ffd700;
+            --gold2: #ffaa00;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: white;
+            padding-bottom: 100px;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ══════════════════════════════════
+           EPIC BACKGROUND
+        ══════════════════════════════════ */
+        .bg-layers {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Main atmosphere */
+        .bg-layers::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 120% 50% at 50% -5%, rgba(255,180,0,0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 80% 60% at -10% 50%, rgba(255,75,43,0.10) 0%, transparent 55%),
+                radial-gradient(ellipse 80% 60% at 110% 60%, rgba(200,50,0,0.08) 0%, transparent 55%),
+                linear-gradient(180deg, #120600 0%, #07050a 25%, #07050a 100%);
+        }
+
+        /* Animated nebula blobs */
+        .bg-layers::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 40% 25% at 20% 30%, rgba(255,215,0,0.04) 0%, transparent 70%),
+                radial-gradient(ellipse 35% 20% at 80% 70%, rgba(255,75,43,0.06) 0%, transparent 70%);
+            animation: nebulaDrift 15s ease-in-out infinite alternate;
+        }
+        @keyframes nebulaDrift {
+            0%   { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.15) rotate(3deg); }
+        }
+
+        /* Grid lines */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,75,43,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,75,43,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+            animation: gridPan 20s linear infinite;
+        }
+        @keyframes gridPan { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+
+        /* Particle stars */
+        .stars {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            animation: starTwinkle ease-in-out infinite;
+        }
+
+        /* Embers / particles */
+        .ember {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            10%  { opacity: 1; }
+            90%  { opacity: 0.5; }
+            100% { transform: translateY(-100vh) translateX(var(--drift)); opacity: 0; }
+        }
+
+        /* ══════════════════════════════════
+           HEADER
+        ══════════════════════════════════ */
+        .header {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 50px 20px 30px;
+            overflow: hidden;
+        }
+
+        /* Trophy icon burst */
+        .trophy-burst {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 8px;
+            animation: trophyPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both, trophyFloat 3s ease-in-out 0.6s infinite;
+            filter: drop-shadow(0 0 20px rgba(255,215,0,0.7)) drop-shadow(0 0 50px rgba(255,180,0,0.4));
+        }
+        @keyframes trophyPop {
+            from { transform: scale(0) rotate(-30deg); opacity: 0; }
+            to   { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes trophyFloat {
+            0%,100% { transform: translateY(0) rotate(-2deg); filter: drop-shadow(0 0 20px rgba(255,215,0,0.7)); }
+            50%     { transform: translateY(-8px) rotate(2deg); filter: drop-shadow(0 0 35px rgba(255,215,0,1)) drop-shadow(0 0 60px rgba(255,180,0,0.5)); }
+        }
+
+        .header h1 {
+            font-family: 'Black Ops One', sans-serif;
+            font-size: clamp(2.4rem, 11vw, 3.5rem);
+            letter-spacing: 5px;
+            line-height: 1;
+            background: linear-gradient(135deg, #ffe566 0%, #ffd700 30%, #ff8c00 70%, #ff4b2b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 30px rgba(255,200,0,0.4));
+            animation: titleShimmer 3s ease-in-out infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes titleShimmer {
+            0%,100% { background-position: 0% 50%; }
+            50%     { background-position: 100% 50%; }
+        }
+
+        .header-sub {
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 10px;
+            font-size: 0.75rem;
+            color: rgba(255,200,100,0.4);
+            margin-top: 6px;
+        }
+
+        /* Decorative line */
+        .header-divider {
+            position: relative;
+            margin: 18px auto 0;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,215,0,0.5), rgba(255,75,43,0.5), transparent);
+            overflow: visible;
+        }
+        .header-divider::before {
+            content: '◆';
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.5rem;
+            color: var(--gold);
+            background: var(--bg);
+            padding: 0 8px;
+            text-shadow: 0 0 10px rgba(255,215,0,0.8);
+        }
+
+        /* Live dot */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 4px 14px;
+            background: rgba(255,75,43,0.1);
+            border: 1px solid rgba(255,75,43,0.3);
+            border-radius: 50px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--accent2);
+        }
+        .live-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: livePulse 1.2s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%,100% { transform: scale(1); opacity: 1; }
+            50%     { transform: scale(1.8); opacity: 0.5; }
+        }
+
+        /* ══════════════════════════════════
+           LEADERBOARD CONTAINER
+        ══════════════════════════════════ */
+        .leaderboard-container {
+            padding: 10px 18px 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ══════════════════════════════════
+           RANK ITEMS
+        ══════════════════════════════════ */
+        .rank-item {
+            background: linear-gradient(135deg, #131018, #0d0b10);
+            margin-bottom: 11px;
+            padding: 14px 15px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s;
+            animation: itemReveal 0.5s cubic-bezier(0.22,1,0.36,1) both;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .rank-item:nth-child(1) { animation-delay: 0.08s; }
+        .rank-item:nth-child(2) { animation-delay: 0.13s; }
+        .rank-item:nth-child(3) { animation-delay: 0.18s; }
+        .rank-item:nth-child(4) { animation-delay: 0.23s; }
+        .rank-item:nth-child(5) { animation-delay: 0.28s; }
+        .rank-item:nth-child(6) { animation-delay: 0.33s; }
+        .rank-item:nth-child(7) { animation-delay: 0.38s; }
+        .rank-item:nth-child(8) { animation-delay: 0.43s; }
+        .rank-item:nth-child(9) { animation-delay: 0.48s; }
+        .rank-item:nth-child(10){ animation-delay: 0.53s; }
+        @keyframes itemReveal {
+            from { opacity:0; transform:translateX(-40px) scale(0.95); }
+            to   { opacity:1; transform:translateX(0) scale(1); }
+        }
+
+        .rank-item:hover {
+            transform: translateX(6px) scale(1.015);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6), -4px 0 20px rgba(255,75,43,0.15);
+        }
+        .rank-item:active { transform: scale(0.98); }
+
+        /* Hover sweep */
+        .rank-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.4s;
+        }
+        .rank-item:hover::before { transform: translateX(100%); }
+
+        /* Left accent bar */
+        .rank-item::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 20%; bottom: 20%;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background: rgba(255,75,43,0.3);
+            transition: background 0.2s, height 0.2s;
+        }
+        .rank-item:hover::after { background: var(--accent); top: 10%; bottom: 10%; }
+
+        /* ─── TOP 3 SPECIAL TREATMENTS ─── */
+        .rank-item.rank-1 {
+            background: linear-gradient(135deg, #1e1508, #140f04, #0d0b10);
+            border-color: rgba(255,215,0,0.25);
+            box-shadow:
+                0 4px 24px rgba(0,0,0,0.6),
+                0 0 40px rgba(255,200,0,0.08),
+                inset 0 1px 0 rgba(255,215,0,0.1);
+        }
+        .rank-item.rank-1::after { background: var(--gold); }
+        .rank-item.rank-1:hover {
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7), -4px 0 30px rgba(255,215,0,0.25), 0 0 50px rgba(255,200,0,0.12);
+        }
+
+        .rank-item.rank-2 {
+            background: linear-gradient(135deg, #141414, #0f0f0f);
+            border-color: rgba(192,192,192,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(200,200,200,0.06);
+        }
+        .rank-item.rank-2::after { background: var(--silver); }
+
+        .rank-item.rank-3 {
+            background: linear-gradient(135deg, #160d08, #100b07);
+            border-color: rgba(205,127,50,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(205,127,50,0.08);
+        }
+        .rank-item.rank-3::after { background: var(--bronze); }
+
+        /* Rank number */
+        .rank-number {
+            width: 38px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.2);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .rank-item.rank-1 .rank-number { color: var(--gold); text-shadow: 0 0 15px rgba(255,215,0,0.6); font-size: 1.8rem; }
+        .rank-item.rank-2 .rank-number { color: var(--silver); text-shadow: 0 0 10px rgba(192,192,192,0.4); }
+        .rank-item.rank-3 .rank-number { color: var(--bronze); text-shadow: 0 0 10px rgba(205,127,50,0.4); }
+
+        /* Avatar */
+        .rank-avatar-wrap {
+            position: relative;
+            margin-right: 13px;
+            flex-shrink: 0;
+        }
+        .rank-avatar {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.08);
+            display: block;
+            transition: transform 0.2s;
+        }
+        .rank-item:hover .rank-avatar { transform: scale(1.08); }
+
+        /* Avatar rings for top 3 */
+        .rank-item.rank-1 .rank-avatar {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.2), 0 0 20px rgba(255,215,0,0.3);
+            animation: avatarGlowGold 2.5s ease-in-out infinite;
+        }
+        @keyframes avatarGlowGold {
+            0%,100% { box-shadow: 0 0 0 3px rgba(255,215,0,0.2), 0 0 20px rgba(255,215,0,0.3); }
+            50%     { box-shadow: 0 0 0 4px rgba(255,215,0,0.4), 0 0 35px rgba(255,215,0,0.5); }
+        }
+        .rank-item.rank-2 .rank-avatar { border-color: var(--silver); box-shadow: 0 0 14px rgba(192,192,192,0.2); }
+        .rank-item.rank-3 .rank-avatar { border-color: var(--bronze); box-shadow: 0 0 14px rgba(205,127,50,0.2); }
+
+        /* Crown badge on #1 */
+        .rank-avatar-wrap .crown {
+            display: none;
+            position: absolute;
+            top: -12px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            filter: drop-shadow(0 0 6px rgba(255,215,0,0.8));
+            animation: crownWiggle 2s ease-in-out infinite;
+        }
+        .rank-item.rank-1 .rank-avatar-wrap .crown { display: block; }
+        @keyframes crownWiggle {
+            0%,100% { transform: translateX(-50%) rotate(-8deg); }
+            50%     { transform: translateX(-50%) rotate(8deg) translateY(-3px); }
+        }
+
+        /* Rank info */
+        .rank-info { flex-grow: 1; min-width: 0; }
+        .rank-name {
+            display: block;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: rgba(255,255,255,0.92);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+        .rank-item.rank-1 .rank-name { color: var(--gold); font-size: 1rem; }
+
+        .rank-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .win-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            color: var(--gold);
+            background: rgba(255,215,0,0.08);
+            padding: 2px 9px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,215,0,0.15);
+        }
+        .rank-item.rank-1 .win-count {
+            background: rgba(255,215,0,0.15);
+            border-color: rgba(255,215,0,0.3);
+            box-shadow: 0 0 10px rgba(255,215,0,0.15);
+        }
+        .like-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            color: rgba(255,100,70,0.8);
+        }
+
+        /* Score bar (visual flair) */
+        .score-bar-wrap {
+            margin-top: 6px;
+            height: 2px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .score-bar {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(to right, rgba(255,215,0,0.5), rgba(255,75,43,0.5));
+            width: var(--bar-pct, 50%);
+            animation: barGrow 1s cubic-bezier(0.22,1,0.36,1) both;
+            animation-delay: inherit;
+        }
+        @keyframes barGrow { from { width: 0; } to { width: var(--bar-pct, 50%); } }
+
+        /* ══════════════════════════════════
+           NAVIGATION FOOTER
+        ══════════════════════════════════ */
+        .leaderboard-footer {
+            position: fixed;
+            bottom: 0; width: 100%;
+            background: rgba(5,4,8,0.92);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 5px 16px;
+            border-top: 1px solid rgba(255,75,43,0.15);
+            z-index: 1000;
+            backdrop-filter: blur(24px) saturate(1.5);
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
+        }
+        .leaderboard-footer::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 15%; right: 15%; height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,215,0,0.3), rgba(255,75,43,0.4), transparent);
+        }
+
+        .footer-link {
+            color: rgba(255,255,255,0.25);
+            text-decoration: none;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+            position: relative;
+        }
+        .footer-link:hover { color: rgba(255,255,255,0.6); transform: translateY(-2px); }
+        .footer-link.active {
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        .footer-link.active .footer-icon {
+            filter: drop-shadow(0 0 8px rgba(255,215,0,0.7));
+            animation: iconBounce 2s ease-in-out infinite;
+        }
+        @keyframes iconBounce {
+            0%,100% { transform: translateY(0); }
+            50%     { transform: translateY(-4px); }
+        }
+        .footer-icon { font-size: 1.25rem; transition: transform 0.2s; }
+        .footer-link:not(.active):hover .footer-icon { transform: scale(1.2); }
+
+        /* Active dot */
+        .footer-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px; left: 50%;
+            transform: translateX(-50%);
+            width: 18px; height: 2px;
+            background: linear-gradient(to right, var(--gold2), var(--accent));
+            border-radius: 2px;
+            box-shadow: 0 0 6px rgba(255,215,0,0.6);
+        }
+
+        /* ══════════════════════════════════
+           MODAL
+        ══════════════════════════════════ */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.88);
+            display: none;
+            justify-content: center; align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(14px) saturate(0.8);
+        }
+
+        .user-popup {
+            background: linear-gradient(145deg, #1c1522, #110e16);
+            width: 85%; max-width: 320px;
+            border-radius: 32px;
+            padding: 32px 26px;
+            text-align: center;
+            border: 1px solid rgba(255,215,0,0.15);
+            box-shadow:
+                0 30px 80px rgba(0,0,0,0.8),
+                0 0 80px rgba(255,200,0,0.05),
+                0 0 0 1px rgba(255,255,255,0.04) inset;
+            position: relative;
+            overflow: hidden;
+            animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.7) translateY(30px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .user-popup::before {
+            content: '';
+            position: absolute;
+            top: -80px; left: 50%;
+            transform: translateX(-50%);
+            width: 220px; height: 150px;
+            background: radial-gradient(ellipse, rgba(255,215,0,0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        .btn-action {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: white;
+            padding: 13px;
+            border-radius: 50px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.95rem;
+            letter-spacing: 2.5px;
+            width: 100%;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+            backdrop-filter: blur(8px);
+        }
+        .btn-action:hover {
+            background: rgba(255,75,43,0.15);
+            border-color: rgba(255,75,43,0.4);
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(255,75,43,0.2);
+        }
+        .btn-action:active { transform: scale(0.97); }
+
+        /* ══════════════════════════════════
+           SECTION LABEL
+        ══════════════════════════════════ */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 18px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
+        }
+        .section-label span {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 4px;
+            color: rgba(255,255,255,0.2);
+            white-space: nowrap;
+        }
+        .section-label::before, .section-label::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,215,0,0.2), transparent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layers"></div>
+    <div class="bg-grid"></div>
+    <div class="stars" id="starsContainer"></div>
+
+    <!-- Embers -->
+    <div class="ember" style="width:2px;height:2px;background:rgba(255,180,0,0.7);left:8%;animation-duration:11s;animation-delay:0s;top:100%;--drift:15px;box-shadow:0 0 4px rgba(255,180,0,0.8)"></div>
+    <div class="ember" style="width:3px;height:3px;background:rgba(255,80,30,0.6);left:22%;animation-duration:14s;animation-delay:2.5s;top:100%;--drift:-20px"></div>
+    <div class="ember" style="width:2px;height:2px;background:rgba(255,215,0,0.7);left:40%;animation-duration:9s;animation-delay:1s;top:100%;--drift:10px;box-shadow:0 0 6px rgba(255,215,0,0.7)"></div>
+    <div class="ember" style="width:2px;height:2px;background:rgba(255,100,40,0.6);left:58%;animation-duration:12s;animation-delay:4s;top:100%;--drift:-12px"></div>
+    <div class="ember" style="width:3px;height:3px;background:rgba(255,200,60,0.6);left:74%;animation-duration:10s;animation-delay:6s;top:100%;--drift:18px;box-shadow:0 0 5px rgba(255,215,0,0.6)"></div>
+    <div class="ember" style="width:2px;height:2px;background:rgba(255,70,20,0.7);left:88%;animation-duration:13s;animation-delay:3s;top:100%;--drift:-8px"></div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <span class="trophy-burst">🏆</span>
+        <h1>BATTLE KINGS</h1>
+        <div class="header-sub">Zo-Tinder · Hall of Fame</div>
+        <div class="header-divider"></div>
+        <div class="live-badge"><span class="live-dot"></span> LIVE RANKINGS</div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="section-label"><span>ALL TIME CHAMPIONS</span></div>
+    <div class="leaderboard-container" id="leaderboardList"></div>
+
+    <!-- FOOTER -->
+    <div class="leaderboard-footer">
+        <a href="home.html" class="footer-link">
+            <span class="footer-icon">🏠</span><span>HOME</span>
+        </a>
+        <a href="battle-leaderboard.html" class="footer-link active">
+            <span class="footer-icon">🏆</span><span>WINS</span>
+        </a>
+        <a href="profilelike_leaderboard.html" class="footer-link">
+            <span class="footer-icon">❤️</span><span>LIKES</span>
+        </a>
+        <a href="most-followed.html" class="footer-link">
+            <span class="footer-icon">👥</span><span>FOLLOWED</span>
+        </a>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="userModal">
+        <div class="user-popup">
+            <img src="" id="popAvatar" style="width:90px;height:90px;border-radius:50%;margin-bottom:14px;border:2px solid var(--gold);box-shadow:0 0 30px rgba(255,215,0,0.4);">
+            <h2 id="popName" style="font-family:'Black Ops One';font-size:1.3rem;letter-spacing:2px;">--</h2>
+            <p id="popBio" style="font-size:0.78rem;color:rgba(200,185,210,0.6);margin:12px 0 0;line-height:1.5;">--</p>
+            <button class="btn-action" style="background:linear-gradient(135deg,#ff6030,#ff4b2b);border:none;box-shadow:0 0 20px rgba(255,75,43,0.4);margin-top:20px;" onclick="followUser()">FOLLOW</button>
+            <button class="btn-action" id="viewProfileBtn">VIEW PROFILE</button>
+            <button onclick="closePopup()" style="background:none;border:none;color:rgba(255,255,255,0.2);margin-top:18px;font-family:'DM Sans';font-size:0.8rem;cursor:pointer;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.55)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">CLOSE</button>
+        </div>
+    </div>
+
+    <script>
+        // Generate star particles
+        const starsContainer = document.getElementById('starsContainer');
+        for (let i = 0; i < 60; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2 + 0.5;
+            s.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${Math.random()*100}%;
+                top:${Math.random()*100}%;
+                background:rgba(255,220,${Math.floor(Math.random()*100+100)},${Math.random()*0.6+0.2});
+                animation:starTwinkle ${Math.random()*3+2}s ease-in-out ${Math.random()*4}s infinite;
+                box-shadow:0 0 ${size*2}px rgba(255,220,150,0.4);
+            `;
+            starsContainer.appendChild(s);
+        }
+    </script>
+
+    <style>
+        @keyframes starTwinkle {
+            0%,100% { opacity:0.2; transform:scale(1); }
+            50% { opacity:1; transform:scale(1.5); }
+        }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getDatabase, ref, onValue, query, orderByChild, limitToLast, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+            authDomain: "zo-tinder.firebaseapp.com",
+            databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "zo-tinder",
+            storageBucket: "zo-tinder.firebasestorage.app",
+            messagingSenderId: "866061631708",
+            appId: "1:866061631708:web:f2c70a3989032095803419"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let currentUid = null;
+        let targetPopUid = null;
+
+        onAuthStateChanged(auth, (user) => { if(user) currentUid = user.uid; });
+
+        const winQuery = query(ref(db, 'users'), orderByChild('battleWins'), limitToLast(50));
+
+        onValue(winQuery, (snap) => {
+            const list = [];
+            snap.forEach(child => { list.push({ uid: child.key, ...child.val() }); });
+
+            list.sort((a,b) => {
+                if ((b.battleWins || 0) !== (a.battleWins || 0)) return (b.battleWins || 0) - (a.battleWins || 0);
+                return (b.total_likes || 0) - (a.total_likes || 0);
+            });
+
+            const maxWins = list[0]?.battleWins || 1;
+
+            const rankClass = (i) => i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+            const rankEmoji = (i) => i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+
+            document.getElementById('leaderboardList').innerHTML = list.map((u, i) => {
+                const pct = Math.max(8, Math.round(((u.battleWins || 0) / maxWins) * 100));
+                return `
+                <div class="rank-item ${rankClass(i)}" style="animation-delay:${0.05 + i * 0.055}s"
+                     onclick="openPop('${u.uid}','${(u.username||'').replace(/'/g,"\\'")}','${(u.bio||'').replace(/'/g,"\\'")}','${u.photoURL||''}')">
+                    <div class="rank-number">${i < 3 ? rankEmoji(i) : '#' + (i+1)}</div>
+                    <div class="rank-avatar-wrap">
+                        <span class="crown">👑</span>
+                        <img src="${u.photoURL || ''}" class="rank-avatar">
+                    </div>
+                    <div class="rank-info">
+                        <span class="rank-name">${u.username || 'Unknown'}</span>
+                        <div class="rank-stats">
+                            <span class="win-count">🏆 ${u.battleWins || 0} WINS</span>
+                            <span class="like-count">❤️ ${u.total_likes || 0}</span>
+                        </div>
+                        <div class="score-bar-wrap">
+                            <div class="score-bar" style="--bar-pct:${pct}%; animation-delay:${0.3 + i * 0.055}s"></div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+
+        window.openPop = (uid, n, b, a) => {
+            targetPopUid = uid;
+            document.getElementById('popName').innerText = n;
+            document.getElementById('popBio').innerText = b;
+            document.getElementById('popAvatar').src = a;
+            document.getElementById('viewProfileBtn').onclick = () => { window.location.href = `view-profile.html?uid=${uid}`; };
+            document.getElementById('userModal').style.display = 'flex';
+        };
+
+        window.closePopup = () => document.getElementById('userModal').style.display = 'none';
+
+        window.followUser = async () => {
+            if (!targetPopUid || targetPopUid === currentUid) return alert("Hetiang hi a theih loh!");
+            const updates = {};
+            updates[`users/${currentUid}/following/${targetPopUid}`] = true;
+            updates[`users/${targetPopUid}/followers/${currentUid}`] = true;
+            await update(ref(db), updates);
+            alert("Followed!");
+        };
+    </script>
+</body>
+</html>

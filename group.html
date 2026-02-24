@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Community</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #ff3e1d;
+            --accent2: #ff7a00;
+            --bg: #080808;
+            --card: #111111;
+            --card2: #161616;
+            --border: rgba(255,255,255,0.06);
+            --glow: rgba(255,62,29,0.25);
+            --verified: #00e5ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            color: white;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .glow-orb {
+            position: fixed;
+            width: 340px; height: 340px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,62,29,0.1) 0%, transparent 70%);
+            top: -100px; right: -80px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ══ HEADER ══ */
+        .header {
+            position: relative;
+            z-index: 10;
+            padding: 50px 20px 14px;
+            background: linear-gradient(180deg, #0e0e0e 0%, transparent 100%);
+            flex-shrink: 0;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent);
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .brand-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 2.5rem;
+            line-height: 1;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #fff 40%, #ff7a00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions { display: flex; gap: 8px; padding-top: 6px; }
+
+        .h-btn {
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .h-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+
+        .notif-dot {
+            position: absolute;
+            top: 6px; right: 6px;
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 1.5px solid var(--bg);
+            box-shadow: 0 0 6px var(--accent);
+        }
+
+        /* CHIPS */
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-bottom: 12px;
+        }
+        .filter-row::-webkit-scrollbar { display: none; }
+
+        .chip {
+            flex-shrink: 0;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: #777;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 0 16px var(--glow);
+        }
+        .chip:active { transform: scale(0.93); }
+
+        /* SEARCH */
+        .search-box {
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            transition: border-color 0.2s;
+        }
+        .search-box:focus-within {
+            border-color: rgba(255,62,29,0.4);
+            box-shadow: 0 0 0 3px rgba(255,62,29,0.07);
+        }
+        .search-box input {
+            background: none; border: none;
+            color: white; width: 100%; outline: none;
+            font-size: 0.9rem;
+            font-family: 'Nunito', sans-serif;
+        }
+        .search-box input::placeholder { color: #444; }
+        .search-clear {
+            font-size: 1rem;
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: #555;
+        }
+        .search-clear.visible { opacity: 1; }
+
+        /* ══ CONTENT ══ */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px 100px;
+            position: relative;
+            z-index: 5;
+            scrollbar-width: none;
+        }
+        .content::-webkit-scrollbar { display: none; }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #3a3a3a;
+            margin: 4px 4px 10px;
+        }
+
+        /* ══ PINNED OFFICIAL CARD ══ */
+        .pinned-card {
+            background: linear-gradient(135deg, #1a0a0a, #140404);
+            border-radius: 22px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255,62,29,0.25);
+            margin-bottom: 6px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 24px rgba(255,62,29,0.08);
+        }
+        .pinned-card:active { transform: scale(0.97); }
+
+        .pinned-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: linear-gradient(180deg, var(--accent), var(--accent2));
+        }
+
+        .pinned-card::after {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(255,62,29,0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        .pinned-label {
+            position: absolute;
+            top: 10px; right: 14px;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .official-avatar {
+            width: 54px; height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            color: white;
+            flex-shrink: 0;
+            margin-right: 14px;
+            box-shadow: 0 0 20px rgba(255,62,29,0.3);
+        }
+
+        /* ══ GROUP CARD ══ */
+        .group-card {
+            background: var(--card);
+            border-radius: 22px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            transition: 0.2s;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            animation: fadeUp 0.35s ease both;
+        }
+
+        .group-card:nth-child(1) { animation-delay: 0.04s; }
+        .group-card:nth-child(2) { animation-delay: 0.08s; }
+        .group-card:nth-child(3) { animation-delay: 0.12s; }
+        .group-card:nth-child(4) { animation-delay: 0.16s; }
+        .group-card:nth-child(5) { animation-delay: 0.20s; }
+        .group-card:nth-child(6) { animation-delay: 0.24s; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .group-card:active { transform: scale(0.97); }
+
+        .avatar-wrap { position: relative; flex-shrink: 0; margin-right: 14px; }
+
+        .avatar-emoji {
+            width: 54px; height: 54px;
+            border-radius: 16px;
+            border: 1.5px solid rgba(255,255,255,0.07);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.7rem;
+        }
+
+        .online-dot {
+            position: absolute;
+            bottom: -2px; right: -2px;
+            width: 13px; height: 13px;
+            background: #1aff6e;
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+            box-shadow: 0 0 8px rgba(26,255,110,0.5);
+        }
+
+        .group-info { flex: 1; min-width: 0; }
+
+        .group-name {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.12rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+
+        .verified { color: var(--verified); font-size: 0.95rem; }
+
+        .member-info {
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 800;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .last-msg {
+            font-size: 13px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .last-msg em { font-style: normal; color: #777; font-weight: 700; }
+
+        .card-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .card-time { font-size: 11px; color: #3a3a3a; font-weight: 700; }
+
+        .notif-badge {
+            background: var(--accent);
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px var(--glow);
+        }
+
+        .muted-icon { font-size: 14px; opacity: 0.25; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+        .empty-state.show { display: block; }
+        .empty-state .e-emoji { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state p { color: #444; font-size: 14px; }
+
+        /* ══ FAB ══ */
+        .create-fab {
+            position: fixed;
+            bottom: 90px; right: 20px;
+            width: 54px; height: 54px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 28px rgba(255,62,29,0.45);
+            color: white;
+            font-size: 1.7rem;
+            font-weight: bold;
+            z-index: 999;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .create-fab:active { transform: scale(0.9); }
+
+        /* ══ FOOTER ══ */
+        .footer {
+            position: fixed;
+            bottom: 0; width: 100%;
+            height: 72px;
+            background: rgba(8,8,8,0.96);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+            padding-bottom: 8px;
+        }
+
+        .foot-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: 0.25s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 14px;
+            border-radius: 12px;
+        }
+        .foot-btn.active {
+            opacity: 1;
+            filter: drop-shadow(0 0 8px var(--accent));
+        }
+        .foot-dot {
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px var(--accent);
+            opacity: 0;
+            transition: 0.25s;
+        }
+        .foot-btn.active .foot-dot { opacity: 1; }
+        .foot-btn:active { transform: scale(0.85); }
+
+        /* ══ OVERLAYS ══ */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .overlay.show { display: flex; }
+        .overlay.center { align-items: center; }
+
+        .sheet {
+            width: 100%;
+            max-width: 480px;
+            background: #141414;
+            border-radius: 28px 28px 0 0;
+            padding: 20px 20px 44px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.34,1.1,0.64,1);
+        }
+        .overlay.show .sheet { transform: translateY(0); }
+
+        .sheet-handle {
+            width: 40px; height: 4px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .sheet-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.4rem;
+            letter-spacing: 1.5px;
+            margin-bottom: 18px;
+            padding-left: 4px;
+        }
+
+        .sheet-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 10px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .sheet-option:active { background: rgba(255,255,255,0.05); }
+        .sheet-option .opt-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+        .sheet-option.danger { color: var(--accent); }
+        .sheet-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+
+        /* Create Modal */
+        .modal-box {
+            width: calc(100% - 32px);
+            max-width: 420px;
+            background: #141414;
+            border-radius: 28px;
+            padding: 28px 22px;
+            border: 1px solid rgba(255,255,255,0.08);
+            transform: scale(0.85) translateY(20px);
+            opacity: 0;
+            transition: 0.3s cubic-bezier(0.34,1.1,0.64,1);
+        }
+        .overlay.show .modal-box { transform: scale(1) translateY(0); opacity: 1; }
+
+        .modal-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            margin-bottom: 22px;
+        }
+
+        .modal-field { margin-bottom: 14px; }
+
+        .modal-label {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 16px;
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal-input:focus { border-color: rgba(255,62,29,0.4); }
+        .modal-input::placeholder { color: #444; }
+
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+        .cat-btn {
+            padding: 10px 6px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: #777;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .cat-btn.selected {
+            background: rgba(255,62,29,0.15);
+            border-color: rgba(255,62,29,0.4);
+            color: var(--accent);
+        }
+        .cat-btn:active { transform: scale(0.94); }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+
+        .btn-cancel {
+            flex: 1; padding: 14px; border-radius: 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: #777;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: 0.2s;
+        }
+
+        .btn-create {
+            flex: 2; padding: 14px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none; color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px; font-weight: 800;
+            cursor: pointer; transition: 0.2s;
+            box-shadow: 0 4px 20px var(--glow);
+        }
+        .btn-create:active { transform: scale(0.96); }
+
+        /* Notifications */
+        .notif-item {
+            display: flex; align-items: flex-start;
+            gap: 12px; padding: 12px 8px;
+            border-radius: 14px; cursor: pointer; transition: 0.2s;
+        }
+        .notif-item:active { background: rgba(255,255,255,0.04); }
+        .notif-av {
+            width: 42px; height: 42px; border-radius: 13px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; flex-shrink: 0;
+        }
+        .notif-text { flex: 1; }
+        .notif-text strong { font-size: 13px; font-weight: 800; display: block; margin-bottom: 2px; }
+        .notif-text span { font-size: 12px; color: #555; }
+        .notif-time { font-size: 11px; color: #3a3a3a; font-weight: 700; flex-shrink: 0; }
+        .notif-unread { background: rgba(255,62,29,0.06); }
+
+        /* Settings */
+        .settings-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            cursor: pointer; transition: 0.2s; border-radius: 12px;
+        }
+        .settings-item:active { background: rgba(255,255,255,0.03); }
+        .settings-left { display: flex; align-items: center; gap: 12px; }
+        .s-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+        .s-label { font-size: 14px; font-weight: 700; }
+        .s-arrow { color: #444; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1e1e1e;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 13px; font-weight: 700;
+            z-index: 5000;
+            opacity: 0; transition: 0.3s;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Simulated pages */
+        .page {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            z-index: 3000;
+            display: flex; flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .page.open { transform: translateX(0); }
+
+        .page-header {
+            padding: 54px 20px 16px;
+            display: flex; align-items: center; gap: 14px;
+            background: #0e0e0e;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; cursor: pointer; transition: 0.2s;
+        }
+        .back-btn:active { transform: scale(0.9); }
+
+        .page-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.5rem; letter-spacing: 2px;
+        }
+
+        .page-body {
+            flex: 1; overflow-y: auto; scrollbar-width: none;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .placeholder-content {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 14px;
+            opacity: 0.35; padding: 40px; text-align: center;
+        }
+        .placeholder-content .big-emoji { font-size: 4rem; }
+        .placeholder-content p { font-size: 14px; color: #666; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="glow-orb"></div>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+    <div class="header-top">
+        <div>
+            <div class="brand-sub">Zo·Tinder</div>
+            <div class="brand-title">Community</div>
+        </div>
+        <div class="header-actions">
+            <div class="h-btn" id="notifBtn" onclick="openNotif()">
+                🔔
+                <div class="notif-dot" id="notifDot"></div>
+            </div>
+            <div class="h-btn" onclick="openSettings()">⚙️</div>
+        </div>
+    </div>
+
+    <div class="filter-row">
+        <div class="chip active" data-cat="all" onclick="setChip(this,'all')">All</div>
+        <div class="chip" data-cat="dating" onclick="setChip(this,'dating')">❤️ Dating</div>
+        <div class="chip" data-cat="gaming" onclick="setChip(this,'gaming')">🎮 Gaming</div>
+        <div class="chip" data-cat="fitness" onclick="setChip(this,'fitness')">💪 Fitness</div>
+        <div class="chip" data-cat="food" onclick="setChip(this,'food')">🍜 Food</div>
+        <div class="chip" data-cat="vibes" onclick="setChip(this,'vibes')">🌙 Vibes</div>
+    </div>
+
+    <div class="search-box">
+        <span style="opacity:0.35;">🔍</span>
+        <input type="text" id="groupSearch" placeholder="Search communities..." oninput="onGroupSearch(); document.getElementById('searchClear').classList.toggle('visible', this.value.length > 0)">
+        <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
+    </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+    <div class="section-label">📌 Official</div>
+    <div class="pinned-card" onclick="openOfficialChat()">
+        <div class="pinned-label">PINNED</div>
+        <div class="official-avatar">ZO</div>
+        <div class="group-info">
+            <div class="group-name">Zo-Tinder Official <span class="verified">✦</span></div>
+            <span class="member-info" id="officialMeta">Loading...</span>
+            <span class="last-msg" id="officialLastMsg">...</span>
+        </div>
+        <div class="card-right">
+            <span class="card-time" id="officialTime"></span>
+            <div class="notif-badge" id="officialBadge" style="display:none;">0</div>
+        </div>
+    </div>
+
+    <div class="section-label" style="margin-top:18px;">👥 Groups</div>
+    <!-- group.js renders cards here from Firebase -->
+    <div id="groupList">
+        <div style="text-align:center;padding:40px 20px;color:#333;font-size:13px;">Loading groups...</div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+        <div class="e-emoji">🔍</div>
+        <p>No groups found.<br>Try a different search or category.</p>
+    </div>
+
+</div>
+
+<!-- FAB -->
+<div class="create-fab" onclick="openCreateModal()">+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <button class="foot-btn" id="foot-home" onclick="navigateTo('home')">🔥<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-store" onclick="navigateTo('store')">🛍️<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-battle" onclick="navigateTo('battle')">⚔️<div class="foot-dot"></div></button>
+    <button class="foot-btn active" id="foot-groups">🪩<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-profile" onclick="navigateTo('profile')">🪪<div class="foot-dot"></div></button>
+</footer>
+
+<!-- ══ CONTEXT MENU ══ -->
+<div class="overlay" id="contextOverlay" onclick="closeContext()">
+    <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title" id="contextName">Group</div>
+        <div class="sheet-option" onclick="doOption('mute')"><span class="opt-icon">🔇</span>Mute Notifications</div>
+        <div class="sheet-option" onclick="doOption('pin')"><span class="opt-icon">📌</span>Pin to Top</div>
+        <div class="sheet-option" onclick="doOption('read')"><span class="opt-icon">✅</span>Mark as Read</div>
+        <div class="sheet-divider"></div>
+        <div class="sheet-option" onclick="doOption('share')"><span class="opt-icon">🔗</span>Share Invite Link</div>
+        <div class="sheet-divider"></div>
+        <div class="sheet-option danger" onclick="doOption('leave')"><span class="opt-icon">🚪</span>Leave Group</div>
+    </div>
+</div>
+
+<!-- ══ CREATE GROUP MODAL ══ -->
+<div class="overlay center" id="createOverlay" onclick="closeCreate(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-title">Create Group</div>
+        <div class="modal-field">
+            <label class="modal-label">Group Name</label>
+            <input class="modal-input" id="newGroupName" type="text" placeholder="e.g. Night Owls 🦉" maxlength="40">
+        </div>
+        <div class="modal-field">
+            <label class="modal-label">Category</label>
+            <div class="category-grid">
+                <div class="cat-btn" data-val="dating" onclick="selectCat(this)">❤️ Dating</div>
+                <div class="cat-btn" data-val="gaming" onclick="selectCat(this)">🎮 Gaming</div>
+                <div class="cat-btn" data-val="fitness" onclick="selectCat(this)">💪 Fitness</div>
+                <div class="cat-btn" data-val="food" onclick="selectCat(this)">🍜 Food</div>
+                <div class="cat-btn" data-val="vibes" onclick="selectCat(this)">🌙 Vibes</div>
+                <div class="cat-btn" data-val="other" onclick="selectCat(this)">✨ Other</div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeCreate()">Cancel</button>
+            <button class="btn-create" onclick="createGroup()">Create 🚀</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ NOTIFICATIONS ══ -->
+<div class="overlay" id="notifOverlay" onclick="closeNotif()">
+    <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Notifications</div>
+        <div class="notif-item notif-unread">
+            <div class="notif-av" style="background:#1a0a0a;">📢</div>
+            <div class="notif-text"><strong>Zo-Tinder Official</strong><span>New feature drop! Update your app 🔥</span></div>
+            <span class="notif-time">Now</span>
+        </div>
+        <div class="notif-item notif-unread">
+            <div class="notif-av" style="background:#1a1030;">🌙</div>
+            <div class="notif-text"><strong>Late Night Vibes</strong><span>Kai: anyone else can't sleep 😭</span></div>
+            <span class="notif-time">2m</span>
+        </div>
+        <div class="notif-item">
+            <div class="notif-av" style="background:#0a1f14;">💪</div>
+            <div class="notif-text"><strong>Fit &amp; Flirty</strong><span>Mia posted a new photo</span></div>
+            <span class="notif-time">15m</span>
+        </div>
+        <div class="notif-item">
+            <div class="notif-av" style="background:#1f0a14;">💔</div>
+            <div class="notif-text"><strong>The Breakup Club</strong><span>Ash: he texted again... 👀</span></div>
+            <span class="notif-time">3h</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="overlay" id="settingsOverlay" onclick="closeSettings()">
+    <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Settings</div>
+        <div class="settings-item" onclick="showToast('🔕 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🔕</span><span class="s-label">Mute All Groups</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('🎨 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🎨</span><span class="s-label">Chat Theme</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('🔒 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🔒</span><span class="s-label">Privacy</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('📦 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">📦</span><span class="s-label">Archived Groups</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('🛟 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🛟</span><span class="s-label">Help &amp; Support</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+    </div>
+</div>
+
+<!-- Simulated nav pages -->
+<div class="page" id="page-home">
+    <div class="page-header"><div class="back-btn" onclick="closePage('home')">←</div><div class="page-title">Home 🔥</div></div>
+    <div class="page-body"><div class="placeholder-content"><div class="big-emoji">🔥</div><p>home.html loads here</p></div></div>
+</div>
+<div class="page" id="page-store">
+    <div class="page-header"><div class="back-btn" onclick="closePage('store')">←</div><div class="page-title">Store 🛍️</div></div>
+    <div class="page-body"><div class="placeholder-content"><div class="big-emoji">🛍️</div><p>store.html loads here</p></div></div>
+</div>
+<div class="page" id="page-battle">
+    <div class="page-header"><div class="back-btn" onclick="closePage('battle')">←</div><div class="page-title">Battle ⚔️</div></div>
+    <div class="page-body"><div class="placeholder-content"><div class="big-emoji">⚔️</div><p>photo-battle.html loads here</p></div></div>
+</div>
+<div class="page" id="page-profile">
+    <div class="page-header"><div class="back-btn" onclick="closePage('profile')">←</div><div class="page-title">Profile 🪪</div></div>
+    <div class="page-body"><div class="placeholder-content"><div class="big-emoji">🪪</div><p>profile.html loads here</p></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let activeCategory = 'all';
+let contextTarget = null;
+let selectedCat = '';
+let longPressTimer = null;
+
+// ── CARD EVENTS ──
+function initCardEvents() {
+    document.querySelectorAll('#groupList .group-card').forEach(card => {
+        card.onclick = function() {
+            const name = this.dataset.name || 'Group';
+            const emoji = this.querySelector('.avatar-emoji')?.textContent || '👥';
+            const sub = this.querySelector('.member-info')?.textContent || '';
+            goToChat(name, emoji, 'group', sub);
+        };
+        card.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => openContext(card), 600); });
+        card.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        card.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+        card.addEventListener('contextmenu', e => { e.preventDefault(); openContext(card); });
+    });
+}
+initCardEvents();
+
+// ── NAVIGATE TO CHAT PAGE ──
+function goToChat(name, avatar, type, sub) {
+    // Pass data via sessionStorage then navigate
+    sessionStorage.setItem('chatName', name);
+    sessionStorage.setItem('chatAvatar', avatar);
+    sessionStorage.setItem('chatType', type);
+    sessionStorage.setItem('chatSub', sub);
+    window.location.href = 'group-chat.html';
+}
+
+// ── FILTER CHIPS ──
+document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        activeCategory = this.dataset.cat;
+        filterGroups();
+    });
+});
+
+// ── SEARCH ──
+const searchInput = document.getElementById('groupSearch');
+const searchClear = document.getElementById('searchClear');
+searchInput.addEventListener('input', function() {
+    searchClear.classList.toggle('visible', this.value.length > 0);
+    filterGroups();
+});
+function clearSearch() {
+    searchInput.value = '';
+    searchClear.classList.remove('visible');
+    filterGroups();
+}
+
+function filterGroups() {
+    const q = searchInput.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('#groupList .group-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const name = (card.dataset.name || '').toLowerCase();
+        const cat = card.dataset.cat || '';
+        const show = (!q || name.includes(q)) && (activeCategory === 'all' || cat === activeCategory);
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('emptyState').classList.toggle('show', visible === 0);
+}
+
+// ── CHIP + SEARCH HELPERS ──
+function setChip(el, cat) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    if (typeof setActiveCategory === 'function') setActiveCategory(cat);
+}
+function clearSearch() {
+    document.getElementById('groupSearch').value = '';
+    document.getElementById('searchClear').classList.remove('visible');
+    if (typeof onGroupSearch === 'function') onGroupSearch();
+}
+
+// ── CONTEXT MENU ──
+function openContext(card) {
+    contextTarget = card;
+    document.getElementById('contextName').textContent = card.dataset.name || 'Group';
+    document.getElementById('contextOverlay').classList.add('show');
+}
+function closeContext() { document.getElementById('contextOverlay').classList.remove('show'); contextTarget = null; }
+function doOption(action) {
+    closeContext();
+    if (action === 'mute')  showToast('🔇 Notifications muted');
+    if (action === 'pin')   showToast('📌 Pinned to top');
+    if (action === 'share') showToast('🔗 Invite link copied!');
+    if (action === 'read') {
+        contextTarget && contextTarget.querySelector('.notif-badge')?.remove();
+        showToast('✅ Marked as read');
+    }
+    if (action === 'leave') {
+        const groupId = contextTarget?.dataset.id;
+        if (contextTarget) {
+            contextTarget.style.transition = '0.3s';
+            contextTarget.style.opacity = '0';
+            contextTarget.style.transform = 'translateX(-20px)';
+            setTimeout(() => { contextTarget.remove(); }, 300);
+        }
+        // Tell group.js to remove from Firebase
+        if (groupId && typeof leaveGroupFirebase === 'function') {
+            leaveGroupFirebase(groupId);
+        }
+        showToast('🚪 Left group');
+    }
+}
+
+// ── CREATE GROUP ──
+function openCreateModal() { document.getElementById('createOverlay').classList.add('show'); }
+function closeCreate(e) {
+    if (!e || e.target.id === 'createOverlay') {
+        document.getElementById('createOverlay').classList.remove('show');
+        document.getElementById('newGroupName').value = '';
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+        selectedCat = '';
+    }
+}
+function selectCat(btn) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedCat = btn.dataset.val;
+}
+async function createGroup() {
+    const name = document.getElementById('newGroupName').value.trim();
+    if (!name)        { showToast('⚠️ Enter a group name'); return; }
+    if (!selectedCat) { showToast('⚠️ Pick a category'); return; }
+
+    showToast('Creating group...');
+
+    // Save to Firebase via group.js
+    if (typeof saveGroupToFirebase === 'function') {
+        const result = await saveGroupToFirebase(name, selectedCat);
+        if (result) {
+            closeCreate();
+            showToast(`🎉 "${name}" created!`);
+            // group.js realtime listener will auto-render the new card
+        } else {
+            showToast('❌ Failed to create group. Try again.');
+        }
+    } else {
+        showToast('❌ Not connected to Firebase yet.');
+    }
+}
+
+// ── NOTIFICATIONS ──
+function openNotif() { document.getElementById('notifOverlay').classList.add('show'); document.getElementById('notifDot').style.display = 'none'; }
+function closeNotif() { document.getElementById('notifOverlay').classList.remove('show'); }
+
+// ── SETTINGS ──
+function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
+
+// ── NAV ──
+function navigateTo(key) { document.getElementById('page-' + key).classList.add('open'); }
+function closePage(key) {
+    document.getElementById('page-' + key).classList.remove('open');
+    document.querySelectorAll('.foot-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('foot-groups').classList.add('active');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+
+<!-- group.js handles Firebase auth, loading, rendering, filtering -->
+<script type="module" src="group.js"></script>
+</body>
+</html>

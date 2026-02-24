@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zo-Chatbox | Notifications</title>
+    <style>
+        /* BASE STYLES */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { 
+            background: #080808; 
+            color: white; 
+            height: 100dvh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .header { 
+            padding: 15px 20px; 
+            background: #0a0a0a; 
+            border-bottom: 1px solid #222; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px;
+            z-index: 10;
+        }
+        .back-btn { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; }
+
+        /* CONTENT AREA */
+        .content-area { 
+            padding: 15px; 
+            overflow-y: auto; 
+            background: linear-gradient(to bottom, #0d0d0d, #080808);
+        }
+        .section-title { 
+            font-size: 0.75rem; 
+            color: #ff4b2b; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            margin: 20px 0 12px 5px; 
+            letter-spacing: 1.5px; 
+        }
+
+        /* FOLLOW REQUEST CARDS */
+        .follow-card {
+            background: #121212;
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #1f1f1f;
+            transition: transform 0.2s;
+        }
+        .follow-card:active { transform: scale(0.98); }
+        
+        .user-img { 
+            width: 55px; 
+            height: 55px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 2px solid #ff4b2b; 
+        }
+        
+        .user-info { flex: 1; overflow: hidden; }
+        .user-name { font-size: 0.95rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-loc { font-size: 0.7rem; color: #888; margin-top: 2px; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .btn-small { 
+            padding: 8px 14px; 
+            border-radius: 20px; 
+            border: none; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: opacity 0.2s;
+        }
+        .btn-follow-back { background: #ff4b2b; color: white; }
+        .btn-view { background: #252525; color: white; }
+
+        /* LIKE NOTIFICATIONS */
+        .like-item {
+            padding: 15px 10px;
+            border-bottom: 1px solid #181818;
+            font-size: 0.85rem;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .like-item:active { background: #111; }
+        .like-item b { color: #fff; font-weight: 600; }
+        .heart-icon { color: #ff4b2b; font-size: 1rem; }
+
+        /* POP-UP PROFILE MODAL */
+        #profileModal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            backdrop-filter: blur(5px);
+        }
+        .modal-card {
+            background: #181818;
+            width: 100%;
+            max-width: 320px;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid #333;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-img { width: 100%; height: 280px; object-fit: cover; }
+        .modal-content { padding: 20px; text-align: center; }
+        .modal-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .modal-bio { font-size: 0.8rem; color: #aaa; margin: 10px 0; line-height: 1.4; }
+        
+        .modal-actions { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            margin-top: 20px; 
+        }
+        .btn-modal { 
+            padding: 12px; 
+            border-radius: 12px; 
+            border: none; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+        }
+
+        /* FOOTER */
+        .footer { 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            height: 70px; 
+            background: #0a0a0a; 
+            border-top: 1px solid #222; 
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .foot-btn { background: none; border: none; color: #444; font-size: 1.4rem; cursor: pointer; }
+        .foot-btn.active { color: #ff4b2b; }
+
+        /* EMPTY STATE */
+        .empty-msg {
+            text-align: center;
+            color: #555;
+            margin-top: 50px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <button class="back-btn" onclick="location.href='home.html'">✕</button>
+        <h2 style="font-size: 1rem; letter-spacing: 0.5px;">NOTIFICATIONS</h2>
+    </header>
+
+    <main class="content-area">
+        <div id="followSection">
+            <p class="section-title">New Followers</p>
+            <div id="followList">
+                </div>
+        </div>
+
+        <div id="likeSection">
+            <p class="section-title">Recent Activity</p>
+            <div id="likeList">
+                </div>
+        </div>
+    </main>
+
+    <div id="profileModal" onclick="this.style.display='none'">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <img src="" id="modalPhoto" class="modal-img">
+            <div class="modal-content">
+                <div id="modalName" class="modal-name"></div>
+                <div id="modalBio" class="modal-bio"></div>
+                
+                <div class="modal-actions">
+                    <button class="btn-modal btn-follow-back" id="modalFollowBtn">Follow Back</button>
+                    <button class="btn-modal btn-view" id="modalViewBtn">Full Profile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <button class="foot-btn" onclick="location.href='home.html'">🔥</button>
+        <button class="foot-btn" onclick="location.href='store.html'">💎</button>
+        <button class="foot-btn" onclick="location.href='photo-battle.html'">⚔️</button>
+        <button class="foot-btn active" onclick="location.href='notify.html'">💬</button>
+        <button class="foot-btn" onclick="location.href='profile.html'">👤</button>
+    </footer>
+
+    <script type="module" src="notify.js"></script>
+</body>
+</html>

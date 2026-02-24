@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Edit Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0000; color: white;
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; padding: 100px 0 50px;
+            position: relative; overflow-x: hidden;
+        }
+
+        /* ── BOKEH BG ── */
+        .bokeh-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+        .bokeh-bg::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse at 15% 25%, rgba(180,20,0,0.55) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 65%, rgba(150,10,0,0.45) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(80,0,0,0.3) 0%, transparent 70%);
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(40px); animation: floatOrb linear infinite; pointer-events: none; }
+        .orb:nth-child(1) { width:160px;height:160px;background:rgba(220,40,0,0.55);left:3%;top:8%;animation-duration:18s; }
+        .orb:nth-child(2) { width:210px;height:210px;background:rgba(180,20,0,0.45);right:5%;top:12%;animation-duration:24s; }
+        
+        @keyframes floatOrb {
+            0%   { transform:translate(0,0) scale(1); }
+            50%  { transform:translate(-18px,28px) scale(0.95); }
+            100% { transform:translate(0,0) scale(1); }
+        }
+
+        /* ── TOP NAVIGATION ── */
+        .top-nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 20px; display: flex; align-items: center;
+            background: linear-gradient(to bottom, rgba(10,0,0,0.9), transparent);
+            z-index: 1000;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 10px 18px; border-radius: 12px;
+            font-size: 0.85rem; font-weight: 700; cursor: pointer;
+            text-decoration: none; display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ── TOAST ── */
+        #toastContainer { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 90%; max-width: 360px; pointer-events: none; }
+        .toast { padding: 14px 20px; border-radius: 16px; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(20px); margin-bottom: 10px; animation: toastIn 0.35s both; }
+        .toast.error { background:rgba(30,0,0,0.92); border:1.5px solid #ff4b2b; color:#ffb0a0; }
+        .toast.success { background:rgba(0,20,5,0.92); border:1.5px solid #28c850; color:#90ffb8; }
+        @keyframes toastIn { from{opacity:0;transform:translateY(-10px);} to{opacity:1;transform:translateY(0);} }
+
+        /* ── CARD ── */
+        .auth-container {
+            width: 90%; max-width: 400px; padding: 36px 26px;
+            background: rgba(10,0,0,0.6); backdrop-filter: blur(28px);
+            border-radius: 36px; border: 1px solid rgba(255,80,50,0.18);
+            text-align: center; position: relative; z-index: 10;
+        }
+        h2 { font-family: 'Rajdhani', sans-serif; color: #ff4b2b; letter-spacing: 3px; margin-bottom: 26px; }
+
+        .section-label { display: block; text-align: left; margin: 20px 0 8px 2px; font-size: 0.75rem; color: rgba(200,140,120,0.7); font-weight: 700; text-transform: uppercase; }
+
+        /* ── PHOTO ── */
+        .photo-upload-area { width: 130px; height: 130px; border-radius: 50%; border: 2px dashed rgba(255,75,43,0.4); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; background: #000; }
+        .photo-upload-area img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .upload-placeholder { position: absolute; font-size: 0.7rem; color: #ff4b2b; text-align: center; }
+        #photoInput { display: none; }
+
+        /* ── INPUTS ── */
+        textarea { width: 100%; padding: 14px; background: rgba(8,0,0,0.75); border: 1.5px solid rgba(255,60,30,0.16); border-radius: 16px; color: white; font-family: inherit; resize: none; }
+        
+        .lookfor-row { display: flex; flex-direction: column; gap: 10px; }
+        .lookfor-btn { width: 100%; padding: 14px; background: rgba(8,0,0,0.6); border: 1.5px solid rgba(255,60,30,0.15); border-radius: 16px; color: rgba(200,140,120,0.5); cursor: pointer; text-align: left; font-weight: 700; }
+        .lookfor-btn.active { border-color: #ff4b2b; color: white; background: rgba(255,75,43,0.12); }
+
+        .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { padding: 9px 16px; background: rgba(8,0,0,0.6); border: 1.5px solid rgba(255,60,30,0.15); border-radius: 50px; color: rgba(200,140,120,0.55); cursor: pointer; font-size: 0.8rem; }
+        .tag.active { border-color: #ff4b2b; color: white; background: rgba(255,75,43,0.14); }
+
+        .btn-main { width: 100%; padding: 17px; background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%); border: none; border-radius: 16px; color: white; font-weight: 900; font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; margin-top: 20px; cursor: pointer; }
+
+        .upload-ring { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,0.8); display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .upload-ring.show { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,75,43,0.2); border-top-color: #ff4b2b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="bokeh-bg">
+    <div class="orb"></div><div class="orb"></div>
+</div>
+
+<div class="top-nav">
+    <a href="profile.html" class="back-btn">← Kir leh rawh</a>
+</div>
+
+<div id="toastContainer"></div>
+
+<div class="upload-ring" id="uploadRing">
+    <div class="spinner"></div>
+    <p style="margin-top: 15px; font-family: 'Rajdhani'; letter-spacing: 2px;">SAVING...</p>
+</div>
+
+<div class="auth-container">
+    <h2>SIAM THA RAWH</h2>
+
+    <span class="section-label">Profile Photo</span>
+    <div class="photo-upload-area" id="photoArea" onclick="document.getElementById('photoInput').click()">
+        <img id="photoPreview" src="">
+        <div class="upload-placeholder" id="uploadPlaceholder">Photo thlakna</div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*">
+
+    <div class="bio-group">
+        <span class="section-label">Bio</span>
+        <textarea id="bio" rows="3" maxlength="150" placeholder="I chanchin tlem ziak rawh..."></textarea>
+    </div>
+
+    <div class="lookfor-group">
+        <span class="section-label">Looking For</span>
+        <div class="lookfor-row">
+            <button class="lookfor-btn" id="btn-kawp" onclick="setLookFor('kawp pui tur')">💍 Kawp pui tur</button>
+            <button class="lookfor-btn" id="btn-thian" onclick="setLookFor('Thian tur')">🤝 Thian tur</button>
+            <button class="lookfor-btn" id="btn-vibing" onclick="setLookFor('Join ve mai mai')">✨ Join ve mai mai</button>
+        </div>
+    </div>
+
+    <div class="interests-group">
+        <span class="section-label">Interests (Max 5)</span>
+        <div class="tags-wrap" id="tagsWrap"></div>
+    </div>
+
+    <button class="btn-main" id="finishBtn" onclick="finishSetup()">Vawng ṭha rawh (Save) →</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+        authDomain: "zo-tinder.firebaseapp.com",
+        databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "zo-tinder",
+        storageBucket: "zo-tinder.firebasestorage.app",
+        messagingSenderId: "866061631708",
+        appId: "1:866061631708:web:f2c70a3989032095803419"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    
+    const CLOUDINARY_CLOUD  = 'duj2rx73z';
+    const CLOUDINARY_PRESET = 'Zo-Tinder';
+    const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+
+    let currentUserId = '';
+    let selectedLookFor = '';
+    let selectedTags = new Set();
+    let photoFile = null;
+    let existingPhotoURL = '';
+
+    const interestList = ['🎵 Music', '🎬 Movies', '⚽ Sports', '🎮 Gaming', '🍳 Cooking', '✈️ Travel', '📚 Reading', '🎨 Art', '💃 Dancing', '📸 Photography', '🏋️ Fitness', '🌿 Nature', '🎤 Singing', '🖥️ Tech', '🙏 Kristian', '🎭 Drama'];
+
+    // Toast Function
+    window.showToast = (msg, type = 'error') => {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    };
+
+    // Initialize Tags
+    const tagsWrap = document.getElementById('tagsWrap');
+    interestList.forEach(tag => {
+        const btn = document.createElement('button');
+        btn.className = 'tag';
+        btn.textContent = tag;
+        btn.id = `tag-${tag}`;
+        btn.onclick = () => {
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                btn.classList.remove('active');
+            } else {
+                if (selectedTags.size >= 5) return showToast('5 aia tam thlan theih loh.');
+                selectedTags.add(tag);
+                btn.classList.add('active');
+            }
+        };
+        tagsWrap.appendChild(btn);
+    });
+
+    window.setLookFor = (val) => {
+        selectedLookFor = val;
+        document.querySelectorAll('.lookfor-btn').forEach(b => b.classList.remove('active'));
+        if(val === 'kawp pui tur') document.getElementById('btn-kawp').classList.add('active');
+        if(val === 'Thian tur') document.getElementById('btn-thian').classList.add('active');
+        if(val === 'Join ve mai mai') document.getElementById('btn-vibing').classList.add('active');
+    };
+
+    // Photo Preview
+    document.getElementById('photoInput').onchange = (e) => {
+        photoFile = e.target.files[0];
+        if (photoFile) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('photoPreview').src = ev.target.result;
+                document.getElementById('uploadPlaceholder').style.display = 'none';
+            };
+            reader.readAsDataURL(photoFile);
+        }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUserId = user.uid;
+            // PULL CURRENT DATA
+            onValue(ref(db, 'users/' + user.uid), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('bio').value = data.bio || '';
+                    if (data.photoURL) {
+                        document.getElementById('photoPreview').src = data.photoURL;
+                        existingPhotoURL = data.photoURL;
+                        document.getElementById('uploadPlaceholder').style.display = 'none';
+                    }
+                    if (data.lookingFor) setLookFor(data.lookingFor);
+                    if (data.interests) {
+                        data.interests.forEach(tag => {
+                            selectedTags.add(tag);
+                            const el = document.getElementById(`tag-${tag}`);
+                            if(el) el.classList.add('active');
+                        });
+                    }
+                }
+            }, { onlyOnce: true });
+        } else {
+            window.location.href = 'join.html';
+        }
+    });
+
+    window.finishSetup = async () => {
+        const bio = document.getElementById('bio').value.trim();
+        if (!bio || !selectedLookFor || selectedTags.size === 0) {
+            return showToast('Khawngaihin engkim hi dah khat rawh.');
+        }
+
+        document.getElementById('uploadRing').classList.add('show');
+        let finalPhotoURL = existingPhotoURL;
+
+        try {
+            // Only upload if a NEW photo was chosen
+            if (photoFile) {
+                const formData = new FormData();
+                formData.append('file', photoFile);
+                formData.append('upload_preset', CLOUDINARY_PRESET);
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                const cloudData = await res.json();
+                finalPhotoURL = cloudData.secure_url;
+            }
+
+            await update(ref(db, 'users/' + currentUserId), {
+                bio,
+                lookingFor: selectedLookFor,
+                interests: Array.from(selectedTags),
+                photoURL: finalPhotoURL
+            });
+
+            showToast('Hlawhtling taka thlak a ni!', 'success');
+            setTimeout(() => { window.location.href = 'profile.html'; }, 1500);
+        } catch (err) {
+            showToast('Error: ' + err.message);
+        } finally {
+            document.getElementById('uploadRing').classList.remove('show');
+        }
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zo-Tinder | Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #ff4b2b; --bg: #0a0000; --card: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Nunito', sans-serif; background: var(--bg); color: white; min-height: 100vh; }
+
+        /* Navigation Header */
+        .nav-header { padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #1a1a1a; }
+        .back-btn { background: none; border: none; color: #888; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700; }
+
+        .header-title { text-align: center; padding: 30px 20px; }
+        .header-title h1 { font-family: 'Rajdhani'; font-size: 2rem; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
+
+        /* Settings List */
+        .settings-container { padding: 0 20px 40px; }
+        .setting-item { 
+            background: var(--card); 
+            padding: 20px; 
+            border-radius: 20px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border: 1px solid #222;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .setting-item:active { transform: scale(0.97); background: #1a1a1a; }
+        .setting-label { font-weight: 700; font-size: 1rem; color: #eee; }
+        .setting-arrow { color: #555; font-size: 1.2rem; font-family: 'Rajdhani'; }
+        
+        .version-text { color: #555; font-size: 0.9rem; font-weight: 700; }
+        .logout-text { color: var(--accent); font-weight: 800; }
+
+        /* About Popup (Modal) */
+        .modal-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.9); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 2000; 
+            padding: 20px; 
+            backdrop-filter: blur(8px);
+        }
+        .about-card { 
+            background: #111; 
+            width: 100%; 
+            max-width: 450px; 
+            border-radius: 30px; 
+            padding: 30px; 
+            border: 1px solid #333; 
+            max-height: 85vh; 
+            display: flex; 
+            flex-direction: column;
+        }
+        .about-card h2 { font-family: 'Rajdhani'; color: var(--accent); font-size: 1.8rem; margin-bottom: 20px; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        
+        .about-content { 
+            overflow-y: auto; 
+            padding-right: 10px;
+            font-size: 0.95rem; 
+            line-height: 1.7; 
+            color: #bbb; 
+            text-align: left; 
+        }
+        .about-content b { color: #fff; }
+        .mizo-quote { font-style: italic; color: var(--accent); text-align: center; display: block; margin: 20px 0; font-weight: 700; }
+
+        .close-pop { 
+            display: block; 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--accent); 
+            border: none; 
+            color: white; 
+            border-radius: 15px; 
+            margin-top: 25px; 
+            font-family: 'Rajdhani'; 
+            font-weight: 700; 
+            font-size: 1rem;
+            cursor: pointer; 
+        }
+
+        /* Scrollbar styling for popup */
+        .about-content::-webkit-scrollbar { width: 4px; }
+        .about-content::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-header">
+        <button class="back-btn" onclick="window.history.back()">← BACK</button>
+    </div>
+
+    <div class="header-title">
+        <h1>Settings</h1>
+    </div>
+
+    <div class="settings-container">
+        <div class="setting-item" onclick="window.location.href='block.html'">
+            <span class="setting-label">Blocked Accounts</span>
+            <span class="setting-arrow">❯</span>
+        </div>
+
+        <div class="setting-item" onclick="openAbout()">
+            <span class="setting-label">About Zo-Tinder</span>
+            <span class="setting-arrow">Info ❯</span>
+        </div>
+
+        <div class="setting-item" style="cursor: default; opacity: 0.8;">
+            <span class="setting-label">App Version</span>
+            <span class="version-text">v1.0.2</span>
+        </div>
+
+        <div class="setting-item" onclick="handleLogout()">
+            <span class="setting-label logout-text">Log Out</span>
+            <span class="setting-arrow">👋</span>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="aboutModal">
+        <div class="about-card">
+            <h2>About Zo-Tinder</h2>
+            <div class="about-content">
+                <b>Zo-Tinder</b> hi Mizo thalaite tana liau liauva siam a ni a. He app hi thian thar siam nan te, mahni nena mizia inmil zawng hmuh chhuah nan te, leh in-date hial thlenga hman theih tura duan a ni.
+                <br><br>
+                Social media khawvel kan luh thuk tawh em avang hian, thian thar siam hi a chang chuan a lo harsa tawh thin a. Chuvang chuan, <b>Zo-Tinder</b> hian thalaite inbiak pawh zung zungna leh inhmel-hriat tawnna kawng awlsam zawk a rawn hawn kan beisei a ni.
+                <br><br>
+                <b>Mimal Thuchah & Solo Developer:</b><br>
+                He app hi <b>Solo Developer</b> (mi pakhat chauh) kutchhuak a ni a. Thil chhuanawm tak pakhat chu, he app pumpui hi <b>Mobile Phone</b> chauh hmanga siam a ni. Mi pakhat chauh kutchhuak a nih avangin, tuna app lian tak takte anga features neih vek chu thil theih rih loh a ni a. Nimahsela, hma sawn zel tura beih a ni a, hun lo la kal zel turah features thar leh hlawkthlak tak tak rawn dah belh zel tum a ni.
+                <br>
+                <span class="mizo-quote">"Thian thar hmu la, i hmalam hun nuam zawk chu vawiin atang hian tan rawh."</span>
+                <br>
+                <b>Founder & Developer:</b> Jeho<br>
+                <b>Release Year:</b> 2026<br>
+                <b>Location:</b> Mizoram, India
+                <br><br>
+                He app i hman avang hian kan lawm e. I duhthusam thian emaw, i kawppui tur emaw i tawn ngei kan beisei sak a che. Zo-Tinder hian hma a sawn zel theih nan i feedback te pawh kan pawimawh hle a ni.
+            </div>
+            <button class="close-pop" onclick="closeAbout()">KA HRE THIAM E</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnXMfYSzMs30oJEeRSCEqExx0gsksuutA",
+            authDomain: "zo-tinder.firebaseapp.com",
+            databaseURL: "https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "zo-tinder",
+            storageBucket: "zo-tinder.firebasestorage.app",
+            messagingSenderId: "866061631708",
+            appId: "1:866061631708:web:f2c70a3989032095803419"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // UI Logic
+        window.openAbout = () => {
+            document.getElementById('aboutModal').style.display = 'flex';
+        };
+
+        window.closeAbout = () => {
+            document.getElementById('aboutModal').style.display = 'none';
+        };
+
+        window.handleLogout = () => {
+            if(confirm("I chhuak duh tak tak em?")) {
+                signOut(auth).then(() => {
+                    window.location.href = "login.html";
+                }).catch((error) => {
+                    console.error("Logout Error:", error);
+                    alert("Tihpalh, logout a hlawhchham tlat.");
+                });
+            }
+        };
+
+        // Close popup if clicking outside the card
+        window.onclick = function(event) {
+            let modal = document.getElementById('aboutModal');
+            if (event.target == modal) {
+                closeAbout();
+            }
+        };
+    </script>
+</body>
+</html>
