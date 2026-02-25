@@ -178,10 +178,13 @@ function createGroupCard(group, index) {
     const time = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
     const unread = group.unread || 0;
     const isOnline = group.onlineCount > 0;
+    const avatarContent = group.avatarURL
+        ? `<img src="${group.avatarURL}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`
+        : emoji;
 
     card.innerHTML = `
         <div class="avatar-wrap">
-            <div class="avatar-emoji" style="background:${bg};">${emoji}</div>
+            <div class="avatar-emoji" style="background:${bg};">${avatarContent}</div>
             ${isOnline ? '<div class="online-dot"></div>' : ''}
         </div>
         <div class="group-info">
@@ -235,6 +238,8 @@ window.saveGroupToFirebase = async function(name, category) {
         memberCount: 1,
         isPublic: true,
         onlineCount: 0,
+        // group-level roles stored here, separate from app-level roles in users/{uid}/role
+        roles: { [currentUser.uid]: 'admin' },
         members: {
             [currentUser.uid]: true
         }

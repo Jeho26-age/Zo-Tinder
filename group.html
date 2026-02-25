@@ -883,15 +883,9 @@ let contextTarget = null;
 let selectedCat = '';
 let longPressTimer = null;
 
-// ── CARD EVENTS ──
+// ── CARD EVENTS ── (navigation handled by group.js with correct ?id= params)
 function initCardEvents() {
     document.querySelectorAll('#groupList .group-card').forEach(card => {
-        card.onclick = function() {
-            const name = this.dataset.name || 'Group';
-            const emoji = this.querySelector('.avatar-emoji')?.textContent || '👥';
-            const sub = this.querySelector('.member-info')?.textContent || '';
-            goToChat(name, emoji, 'group', sub);
-        };
         card.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => openContext(card), 600); });
         card.addEventListener('touchend', () => clearTimeout(longPressTimer));
         card.addEventListener('touchmove', () => clearTimeout(longPressTimer));
@@ -899,16 +893,6 @@ function initCardEvents() {
     });
 }
 initCardEvents();
-
-// ── NAVIGATE TO CHAT PAGE ──
-function goToChat(name, avatar, type, sub) {
-    // Pass data via sessionStorage then navigate
-    sessionStorage.setItem('chatName', name);
-    sessionStorage.setItem('chatAvatar', avatar);
-    sessionStorage.setItem('chatType', type);
-    sessionStorage.setItem('chatSub', sub);
-    window.location.href = 'group-chat.html';
-}
 
 // ── FILTER CHIPS ──
 document.querySelectorAll('.chip').forEach(chip => {

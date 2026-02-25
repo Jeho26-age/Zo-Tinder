@@ -278,6 +278,50 @@
         .msg-time { font-size:10px; color:#333; font-weight:700; padding:0 4px; }
         .msg-time.own { color:rgba(255,255,255,0.4); }
 
+        /* ══ GROUP-LEVEL BADGES ══ */
+        .sender-role-badge.group-admin { background:rgba(255,165,0,0.15); color:#ffa500; }
+        .sender-role-badge.group-mod   { background:rgba(100,200,100,0.15); color:#64c864; }
+
+        /* ══ MEDIA CAPTION ══ */
+        .media-caption { font-size:13px; color:rgba(255,255,255,0.85); padding:4px 4px 2px; word-break:break-word; }
+
+        /* ══ VIEW ONCE ══ */
+        .view-once-bubble { cursor:pointer; }
+        .view-once-cover {
+            width:220px; height:140px; border-radius:12px;
+            background:linear-gradient(135deg,#1a1030,#0d0820);
+            border:1px dashed rgba(167,139,250,0.4);
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+        }
+        .view-once-cover span:first-child { font-size:2rem; }
+        .view-once-label { font-size:11px; font-weight:800; color:#a78bfa; letter-spacing:0.5px; }
+
+        /* ══ MEDIA PREVIEW OVERLAY ══ */
+        .media-preview-box {
+            width:calc(100% - 40px); max-width:400px;
+            background:#141414; border-radius:24px;
+            border:1px solid rgba(255,255,255,0.08);
+            padding:20px; display:flex; flex-direction:column; gap:12px;
+        }
+        .media-preview-box img, .media-preview-box video {
+            width:100%; max-height:260px; object-fit:contain;
+            border-radius:16px; background:#000; display:block;
+        }
+        .caption-input {
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            border-radius:14px; padding:10px 14px; color:white;
+            font-family:'Nunito',sans-serif; font-size:14px; outline:none;
+            width:100%; resize:none;
+        }
+        .caption-input::placeholder { color:#444; }
+        .once-row {
+            display:flex; align-items:center; gap:10px;
+            padding:8px 12px; background:rgba(167,139,250,0.08);
+            border-radius:12px; border:1px solid rgba(167,139,250,0.15); cursor:pointer;
+        }
+        .once-row input[type=checkbox] { width:18px; height:18px; accent-color:#a78bfa; cursor:pointer; }
+        .once-row label { font-size:13px; font-weight:700; color:#a78bfa; cursor:pointer; flex:1; }
+
         /* ══ TYPING ══ */
         .typing-area { padding:4px 14px 0; min-height:22px; flex-shrink:0; }
         .typing-indicator { display:none; align-items:center; gap:6px; font-size:12px; color:#555; font-weight:700; }
@@ -676,19 +720,7 @@
 
         <div class="sheet-option" onclick="showToast('🔗 Invite link copied!');closeSettings()"><span class="opt-icon">🔗</span>Copy Invite Link</div>
         <div class="sheet-option" onclick="switchTab('members');closeSettings()"><span class="opt-icon">👥</span>Manage Members</div>
-        <div class="sheet-option" onclick="openAssignRole()"><span class="opt-icon">🛡️</span>Assign / Remove Roles</div>
-        <div class="sheet-option" onclick="openPromoteAdmin()"><span class="opt-icon">⚙️</span>Make / Remove Admin</div>
-        <div class="sheet-option" onclick="showToast('👑 Transfer coming soon!');closeSettings()"><span class="opt-icon">👑</span>Transfer Ownership</div>
-
-        <div class="sheet-divider"></div>
-
-        <div class="sheet-option" onclick="showToast('🚫 Banned list coming soon!');closeSettings()"><span class="opt-icon">🚫</span>Banned Members</div>
-        <div class="sheet-option" onclick="showToast('📦 Coming soon!');closeSettings()"><span class="opt-icon">📦</span>Archived Messages</div>
-
-        <div class="sheet-divider"></div>
-
-        <!-- No Leave Group — official group -->
-        <div class="sheet-option danger" onclick="deleteGroup()"><span class="opt-icon">🗑️</span>Delete Group</div>
+        <div class="sheet-option" onclick="clearChat()"><span class="opt-icon">🗑️</span>Clear Chat</div>
     </div>
 </div>
 
@@ -869,6 +901,23 @@
         <div class="sheet-option" onclick="attachAction('camera')"><span class="opt-icon">📷</span>Take Photo</div>
         <div class="sheet-option" onclick="attachAction('video')"><span class="opt-icon">🎬</span>Video</div>
         <div class="sheet-option" onclick="attachAction('sticker')"><span class="opt-icon">🎭</span>Sticker</div>
+    </div>
+</div>
+
+<!-- ══ MEDIA PREVIEW SHEET ══ -->
+<div class="overlay center" id="mediaPreviewOverlay" onclick="closeMediaPreview()">
+    <div class="media-preview-box" onclick="event.stopPropagation()">
+        <img id="mediaPreviewImg" src="" alt="preview" style="display:none;">
+        <video id="mediaPreviewVid" src="" controls playsinline style="display:none;"></video>
+        <textarea class="caption-input" id="mediaCaptionInput" placeholder="Add a caption..." rows="2"></textarea>
+        <div class="once-row" onclick="document.getElementById('onceToggle').click()">
+            <input type="checkbox" id="onceToggle" onclick="event.stopPropagation()">
+            <label id="onceLabel" for="onceToggle">👁️ One-time view — disappears after seen</label>
+        </div>
+        <div class="modal-actions" style="margin-top:4px;">
+            <button class="btn-cancel" onclick="closeMediaPreview()">Cancel</button>
+            <button class="btn-confirm" onclick="sendMediaWithCaption()">Send ➤</button>
+        </div>
     </div>
 </div>
 

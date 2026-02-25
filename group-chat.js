@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 import {
-    getDatabase, ref, get, set, push, onValue, remove, update, serverTimestamp, query, orderByChild, limitToLast
+    getDatabase, ref, get, set, push, onValue, remove, update, serverTimestamp, query, orderByChild, limitToLast, onDisconnect
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // ══ FIREBASE CONFIG ══════════════════════════════
@@ -29,7 +29,7 @@ const _params             = new URLSearchParams(window.location.search);
 const GROUP_ID            = _params.get('id')   || 'official_global';
 const GROUP_NAME_FROM_URL = decodeURIComponent(_params.get('name') || '');
 
-// Set header immediately from URL — no more "Loading..."
+// Set header immediately so it never shows wrong name
 (function initHeader() {
     const isOfficial = GROUP_ID === 'official_global';
     const name = isOfficial ? 'Zo-Tinder Official' : (GROUP_NAME_FROM_URL || 'Group Chat');
@@ -85,6 +85,7 @@ let selectedRoleOpt  = 'mod';
 let selectedAdminOpt = 'promote';
 let selectedBanDur   = '1h';
 let currentMemberTarget = null; // { name, role, uid }
+let currentGroupRole    = 'member'; // role in this specific group
 let isRecording      = false;
 let toastTimer       = null;
 
@@ -106,32 +107,39 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 
-    // Auto join official group
+    // Auto join group
     const memberRef = ref(db, `users/${user.uid}/groups/${GROUP_ID}`);
     const memberSnap = await get(memberRef);
     if (!memberSnap.exists()) await set(memberRef, true);
 
-    // Load group meta (member count, pinned etc)
+    // ── PRESENCE ──
+    const _presRef = ref(db, `users/${user.uid}/isOnline`);
+    const _seenRef = ref(db, `users/${user.uid}/lastSeen`);
+    set(_presRef, true);
+    set(_seenRef, Date.now());
+    onDisconnect(_presRef).set(false);
+    onDisconnect(_seenRef).set(Date.now());
+    onDisconnect(ref(db, `groups/${GROUP_ID}/typing/${user.uid}`)).remove();
+
+    // ── GROUP-LEVEL ROLE (non-official groups only) ──
+    if (GROUP_ID !== 'official_global') {
+        onValue(ref(db, `groups/${GROUP_ID}/roles/${user.uid}`), snap => {
+            currentGroupRole = snap.exists() ? snap.val() : 'member';
+        });
+    }
+    // ── APP-LEVEL ROLE realtime ──
+    onValue(ref(db, `users/${user.uid}/role`), snap => {
+        if (user.uid !== OWNER_UID && snap.exists()) currentUserRole = snap.val();
+    });
+
     loadGroupMeta();
-
-    // Listen to messages realtime
     listenMessages();
-
-    // Build waveform
+    listenOnlineCount();
+    listenTyping();
     buildWaveform('wv1');
-
-    // Init swipe to reply
     initSwipeToReply();
-
-    // Load real members and posts from Firebase
     loadMembers();
     listenPosts();
-
-    // Typing simulator (demo)
-    setTimeout(() => {
-        const ti = document.getElementById('typingIndicator');
-        if (ti) { ti.classList.add('show'); setTimeout(() => ti.classList.remove('show'), 3000); }
-    }, 2000);
 });
 
 // ══ LOAD GROUP META ══════════════════════════════
@@ -159,11 +167,17 @@ async function loadGroupMeta() {
         if (GROUP_ID === 'official_global') {
             setHeader('Zo-Tinder Official', '🔥', '#1a0a0a', true);
             prefillEditModal('Zo-Tinder Official', 'The official Zo-Tinder community 🔥');
+            if (metaSnap.exists() && metaSnap.val().readMode) {
+                isReadMode = true;
+                document.getElementById('readModeToggle')?.classList.add('on');
+                document.getElementById('readModeBanner')?.classList.add('show');
+                if (!canSendMessage()) document.getElementById('inputArea').style.display = 'none';
+            }
         } else if (metaSnap.exists()) {
             const meta = metaSnap.val();
-            const name = meta.name || GROUP_NAME_FROM_URL || 'Group Chat';
+            const name   = meta.name   || GROUP_NAME_FROM_URL || 'Group Chat';
             const avatar = meta.avatarURL || meta.emoji || '💬';
-            const bg = meta.avatarBg || '#1a1a1a';
+            const bg     = meta.avatarBg  || '#1a1a1a';
             setHeader(name, avatar, bg, false);
             prefillEditModal(name, meta.description || '');
             if (meta.readMode) {
@@ -181,22 +195,28 @@ async function loadGroupMeta() {
 }
 
 function setHeader(name, avatarOrEmoji, bg, isOfficial) {
-    const nameEl = document.getElementById('groupName');
-    if (nameEl) nameEl.childNodes[0].textContent = name + ' ';
+    // null = leave it unchanged
+    if (name) {
+        const nameEl = document.getElementById('groupName');
+        if (nameEl) nameEl.childNodes[0].textContent = name + ' ';
+        document.title = name + ' | Zo-Tinder';
+    }
     const badge = document.getElementById('officialBadge');
     if (badge) badge.style.display = isOfficial ? '' : 'none';
-    const label = document.getElementById('officialLabel');
-    if (label) label.style.display = isOfficial ? '' : 'none';
-    const avEl = document.getElementById('groupAv');
-    if (avEl) {
-        avEl.style.background = bg;
-        if (avatarOrEmoji && avatarOrEmoji.startsWith('http')) {
-            avEl.innerHTML = `<img src="${avatarOrEmoji}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
-        } else {
-            avEl.textContent = avatarOrEmoji || '💬';
+    const label2 = document.getElementById('officialLabel');
+    if (label2) label2.style.display = isOfficial ? '' : 'none';
+    if (avatarOrEmoji) {
+        const avEl = document.getElementById('groupAv');
+        if (avEl) {
+            if (bg) avEl.style.background = bg;
+            if (avatarOrEmoji.startsWith('http')) {
+                avEl.innerHTML = `<img src="${avatarOrEmoji}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
+            } else {
+                avEl.innerHTML = '';
+                avEl.textContent = avatarOrEmoji;
+            }
         }
     }
-    document.title = name + ' | Zo-Tinder';
 }
 
 function prefillEditModal(name, desc) {
@@ -205,6 +225,58 @@ function prefillEditModal(name, desc) {
     if (n) n.value = name;
     if (d) d.value = desc;
 }
+
+// ══ ONLINE COUNT ════════════════════════════════
+function listenOnlineCount() {
+    onValue(ref(db, 'users'), snap => {
+        let n = 0;
+        snap.forEach(child => {
+            const u = child.val();
+            if (u?.groups?.[GROUP_ID] && u?.isOnline) n++;
+        });
+        const el = document.getElementById('onlineCount');
+        if (el) el.textContent = n;
+    });
+}
+
+// ══ TYPING ═══════════════════════════════════════
+let _typingTimer = null;
+
+function listenTyping() {
+    onValue(ref(db, `groups/${GROUP_ID}/typing`), snap => {
+        const ti  = document.getElementById('typingIndicator');
+        const txt = document.getElementById('typingText');
+        if (!ti || !txt) return;
+        if (!snap.exists()) { ti.classList.remove('show'); return; }
+
+        const now = Date.now();
+        const names = [];
+        snap.forEach(child => {
+            const d = child.val();
+            if (d?.name && d?.t && (now - d.t < 4000) && child.key !== currentUser?.uid) {
+                names.push(d.name);
+            }
+        });
+
+        if (!names.length) { ti.classList.remove('show'); return; }
+
+        txt.textContent = names.length === 1
+            ? `${names[0]} is typing`
+            : names.length === 2
+                ? `${names[0]} and ${names[1]} are typing`
+                : `${names.length} people are typing`;
+        ti.classList.add('show');
+    });
+}
+
+function broadcastTyping() {
+    if (!currentUser || !currentUserData) return;
+    const r = ref(db, `groups/${GROUP_ID}/typing/${currentUser.uid}`);
+    set(r, { name: currentUserData.username || 'User', t: Date.now() });
+    clearTimeout(_typingTimer);
+    _typingTimer = setTimeout(() => remove(r), 3000);
+}
+window.broadcastTyping = broadcastTyping;
 
 // ══ MESSAGES — REALTIME LISTENER ═════════════════
 function listenMessages() {
@@ -256,7 +328,7 @@ function renderMessage(key, msg, container) {
     const initial = (msg.senderName || '?')[0].toUpperCase();
     const avatarHTML = isOwn ? '' : `
         <div class="msg-av" style="background:${msg.avatarBg || '#1a1030'};color:${msg.avatarColor || '#a78bfa'};"
-             onclick="window.showUserProfile('${esc(msg.senderName)}','','','${initial}','${msg.avatarBg || '#1a1030'}','${role}')">
+             onclick="window.showUserProfile('${esc(msg.senderName)}','','','${initial}','${msg.avatarBg || '#1a1030'}','${role}','${msg.photoURL || ''}')">
              ${msg.photoURL ? `<img src="${msg.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">` : initial}
         </div>`;
 
@@ -264,57 +336,20 @@ function renderMessage(key, msg, container) {
     const senderHTML = isOwn ? '' : `<div class="msg-sender" style="color:${msg.avatarColor || '#a78bfa'};">${esc(msg.senderName)} ${roleBadgeHTML}</div>`;
 
     // Bubble content
-    const side = isOwn ? 'own' : 'other';
     let bubbleContent = '';
-    if (msg.type === 'video') {
-        bubbleContent = `<div class="bubble ${side} img-bubble"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
+    if (msg.type === 'image') {
+        bubbleContent = `<div class="bubble ${isOwn ? 'own' : 'other'} img-bubble"
+            oncontextmenu="window.openMsgMenu(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
+            ontouchstart="window.startMsgPress(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
             ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
-            <video src="${msg.mediaURL}" controls playsinline preload="metadata"
-                style="width:220px;max-width:100%;border-radius:14px;display:block;background:#000;max-height:300px;">
-            </video>
-        </div>`;
-    } else if (msg.type === 'image') {
-        bubbleContent = `<div class="bubble ${side} img-bubble"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
-            ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
-            <img src="${msg.mediaURL}" alt="image" style="width:220px;max-width:100%;border-radius:14px;display:block;">
-        </div>`;
-    } else if (msg.type === 'gif') {
-        bubbleContent = `<div class="bubble ${side} img-bubble"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
-            ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
-            <img src="${msg.mediaURL}" alt="gif" style="width:220px;max-width:100%;border-radius:14px;display:block;">
-            <div style="padding:4px 4px 2px;font-size:10px;color:#888;font-weight:700;">GIF</div>
+            <img src="${msg.mediaURL}" alt="image">
         </div>`;
     } else if (msg.type === 'sticker') {
-        bubbleContent = `<div style="font-size:3rem;margin-bottom:2px;cursor:pointer;">${msg.text}</div>`;
-    } else if (msg.type === 'sticker-image') {
-        bubbleContent = `<div style="cursor:pointer;"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
-            ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
-            <img src="${msg.mediaURL}" style="width:120px;height:120px;object-fit:contain;border-radius:16px;display:block;">
-        </div>`;
-    } else if (msg.type === 'voice') {
-        const dur   = msg.duration || '0:00';
-        const wvId  = 'wv-' + key;
-        bubbleContent = `<div class="bubble ${side} voice-bubble"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
-            ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
-            <div class="voice-play ${side}" data-url="${msg.mediaURL}" onclick="window.playVoice(this)">▶</div>
-            <div class="waveform" id="${wvId}"></div>
-            <span class="voice-dur">${dur}</span>
-        </div>`;
-        setTimeout(() => buildWaveform(wvId), 60);
+        bubbleContent = `<div style="font-size:3rem;margin-bottom:2px;">${msg.text}</div>`;
     } else {
-        bubbleContent = `<div class="bubble ${side}"
-            oncontextmenu="window.openMsgMenu(event,this,'${side}','${key}')"
-            ontouchstart="window.startMsgPress(event,this,'${side}','${key}')"
+        bubbleContent = `<div class="bubble ${isOwn ? 'own' : 'other'}"
+            oncontextmenu="window.openMsgMenu(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
+            ontouchstart="window.startMsgPress(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
             ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
             ${replyHTML}${esc(msg.text || '')}
         </div>`;
@@ -406,22 +441,15 @@ async function sendSticker(em) {
 }
 window.sendSticker = sendSticker;
 
-// ══ SEND IMAGE / VIDEO (Cloudinary) ══════════════
+// ══ SEND IMAGE (Cloudinary) ═══════════════════════
 async function uploadAndSendMedia(file) {
-    const isVideo = file.type.startsWith('video/');
-    showToast(isVideo ? '📤 Uploading video...' : '📤 Uploading image...');
-
+    showToast('📤 Uploading...');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_PRESET);
 
-    // Cloudinary requires different endpoints for image vs video
-    const uploadURL = isVideo
-        ? `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`
-        : `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
-
     try {
-        const res  = await fetch(uploadURL, { method: 'POST', body: formData });
+        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
         const data = await res.json();
         if (!data.secure_url) { showToast('❌ Upload failed'); return; }
 
@@ -430,7 +458,7 @@ async function uploadAndSendMedia(file) {
             senderName: currentUserData?.username || 'User',
             senderRole: currentUserRole,
             text:       '',
-            type:       isVideo ? 'video' : 'image',
+            type:       'image',
             mediaURL:   data.secure_url,
             timestamp:  Date.now(),
             avatarBg:   '#1a1030',
@@ -438,16 +466,8 @@ async function uploadAndSendMedia(file) {
             photoURL:   currentUserData?.photoURL || '',
         };
         await push(ref(db, `messages/${GROUP_ID}`), msgData);
-        await update(ref(db, `groups/${GROUP_ID}`), {
-            lastMessage:   isVideo ? '🎬 Video' : '🖼️ Image',
-            lastSender:    currentUserData?.username || 'User',
-            lastMessageAt: Date.now(),
-        });
-        showToast(isVideo ? '✅ Video sent!' : '✅ Image sent!');
-    } catch(e) {
-        console.error('Upload error:', e);
-        showToast('❌ Upload failed');
-    }
+        showToast('✅ Image sent!');
+    } catch(e) { showToast('❌ Upload error'); }
 }
 
 // ══ SWIPE TO REPLY ════════════════════════════════
@@ -532,8 +552,8 @@ function openMsgMenu(e, el, type, key) {
     currentMsgType   = type;
     currentMsgKey    = key || null;
 
-    const canDelete = type === 'own' || canModerate();
-    const canKick   = type === 'other' && canModerate();
+    const canDelete = type === 'own' || canModerateGroup();
+    const canKick   = type === 'other' && canModerateGroup();
 
     document.getElementById('msgDeleteOpt').style.display = canDelete ? '' : 'none';
     document.getElementById('msgKickOpt').style.display   = canKick   ? '' : 'none';
@@ -566,7 +586,7 @@ async function doMsgAction(action) {
     if (action === 'pin') {
         const text = (currentMsgTarget?.innerText?.trim() || '').substring(0, 80);
         document.getElementById('pinnedText').textContent = text;
-        if (canModerate()) await set(ref(db, `groups/${GROUP_ID}/pinned`), text);
+        if (canModerateGroup()) await set(ref(db, `groups/${GROUP_ID}/pinned`), text);
         showToast('📌 Message pinned!');
     }
     if (action === 'delete') {
@@ -624,7 +644,7 @@ function closeSettings() { document.getElementById('settingsOverlay').classList.
 window.closeSettings = closeSettings;
 
 async function toggleReadMode() {
-    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     isReadMode = !isReadMode;
     document.getElementById('readModeToggle').classList.toggle('on', isReadMode);
     document.getElementById('readModeBanner').classList.toggle('show', isReadMode);
@@ -635,7 +655,7 @@ async function toggleReadMode() {
 window.toggleReadMode = toggleReadMode;
 
 async function togglePrivate() {
-    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     isPrivate = !isPrivate;
     document.getElementById('privateToggle').classList.toggle('on', isPrivate);
     await update(ref(db, `groups/${GROUP_ID}`), { isPrivate });
@@ -659,13 +679,11 @@ function closeEditGroup(e) {
 window.closeEditGroup = closeEditGroup;
 
 async function saveGroupEdit() {
-    if (GROUP_ID === 'official_global' && !isOwner()) { showToast('⛔ Owner only'); return; }
-    if (GROUP_ID !== 'official_global' && !canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     const name = document.getElementById('editGroupName').value.trim();
     const desc = document.getElementById('editGroupDesc').value.trim();
     if (!name) { showToast('⚠️ Name cannot be empty'); return; }
-    const nameEl = document.getElementById('groupName');
-    if (nameEl) nameEl.childNodes[0].textContent = name + ' ';
+    setHeader(name, null, null, GROUP_ID === 'official_global');
     await update(ref(db, `groups/${GROUP_ID}`), { name, description: desc });
     closeEditGroup();
     showToast('✅ Group updated!');
@@ -673,7 +691,7 @@ async function saveGroupEdit() {
 window.saveGroupEdit = saveGroupEdit;
 
 async function changeGroupAvatar() {
-    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
     input.onchange = async (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -685,8 +703,7 @@ async function changeGroupAvatar() {
             const data = await res.json();
             if (!data.secure_url) { showToast('❌ Upload failed'); return; }
             await update(ref(db, `groups/${GROUP_ID}`), { avatarURL: data.secure_url });
-            const avEl = document.getElementById('groupAv');
-            if (avEl) { avEl.style.background = '#1a1a1a'; avEl.innerHTML = `<img src="${data.secure_url}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`; }
+            setHeader(null, data.secure_url, '#1a1a1a', GROUP_ID === 'official_global');
             showToast('✅ Avatar updated!');
         } catch(err) { showToast('❌ Upload failed'); }
     };
@@ -694,13 +711,24 @@ async function changeGroupAvatar() {
 }
 window.changeGroupAvatar = changeGroupAvatar;
 
-async function deleteGroup() {
-    if (!isOwner()) { showToast('⛔ Owner only'); return; }
+// clearChat removed — no deleteGroup either
+// ── CLEAR CHAT (admin/owner only) ─────────────────
+async function clearChat() {
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     closeSettings();
-    showToast('🗑️ Group deleted');
-    setTimeout(() => window.location.href = 'group.html', 1000);
+    const confirmed = confirm('Clear all messages for everyone? This cannot be undone.');
+    if (!confirmed) return;
+    try {
+        await remove(ref(db, `messages/${GROUP_ID}`));
+        document.getElementById('messagesArea').innerHTML =
+            '<div class="date-divider"><span>Today</span></div>';
+        showToast('🗑️ Chat cleared');
+    } catch(e) {
+        console.error('clearChat error:', e);
+        showToast('❌ Failed to clear chat');
+    }
 }
-window.deleteGroup = deleteGroup;
+window.clearChat = clearChat;
 
 // ══ ASSIGN ROLE ═══════════════════════════════════
 function openAssignRole() {
@@ -723,7 +751,7 @@ function selectRoleOpt(opt) {
 window.selectRoleOpt = selectRoleOpt;
 
 async function confirmAssignRole() {
-    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
     const name = document.getElementById('roleTargetName').value.trim();
     if (!name) { showToast('⚠️ Enter a member name'); return; }
 
@@ -778,9 +806,9 @@ async function confirmAdminAction() {
 window.confirmAdminAction = confirmAdminAction;
 
 // ══ MEMBER OPTIONS ════════════════════════════════
-function openMemberOptions(e, name, role) {
+function openMemberOptions(e, name, role, uid) {
     e.stopPropagation();
-    currentMemberTarget = { name, role };
+    currentMemberTarget = { name, role, uid };
 
     document.getElementById('memberOptName').textContent = name;
 
@@ -794,8 +822,8 @@ function openMemberOptions(e, name, role) {
     document.getElementById('optRemoveMod').style.display   = (isMod && canAdmin())     ? '' : 'none';
 
     // Only show moderation section to mods and above
-    document.getElementById('modActionsSection').style.display = canModerate() ? '' : 'none';
-    document.getElementById('adminActionsSection').style.display = canAdmin() ? '' : 'none';
+    document.getElementById('modActionsSection').style.display = canModerateGroup() ? '' : 'none';
+    document.getElementById('adminActionsSection').style.display = canManageGroup() ? '' : 'none';
 
     document.getElementById('memberOptOverlay').classList.add('show');
 }
@@ -807,33 +835,59 @@ window.closeMemberOpts = closeMemberOpts;
 async function memberAction(action) {
     closeMemberOpts();
     const name = currentMemberTarget?.name || 'User';
-    const uid  = await findUidByUsername(name);
+    const uid  = currentMemberTarget?.uid || await findUidByUsername(name);
 
     if (action === 'profile') { window.location.href = 'user-view.html'; return; }
+    if (!uid) { showToast('❌ User not found'); return; }
 
     if (action === 'makeAdmin') {
+        // Only app owner can grant app-level admin
         if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'admin');
-        showToast(`⚙️ ${name} is now Admin!`);
+        await set(ref(db, `users/${uid}/role`), 'admin');
+        showToast(`⚙️ ${name} is now App Admin!`);
+        loadMembers(); return;
     }
     if (action === 'removeAdmin') {
         if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
+        await set(ref(db, `users/${uid}/role`), 'member');
         showToast(`👤 ${name} removed as Admin`);
+        loadMembers(); return;
     }
     if (action === 'assignMod') {
-        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'mod');
-        showToast(`🛡️ ${name} is now a Moderator!`);
+        if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+        if (GROUP_ID === 'official_global') {
+            // Official group → app-level mod (works everywhere)
+            await set(ref(db, `users/${uid}/role`), 'mod');
+            showToast(`🛡️ ${name} is now App Moderator!`);
+        } else {
+            // Individual group → group-level mod (this group only)
+            await set(ref(db, `groups/${GROUP_ID}/roles/${uid}`), 'mod');
+            showToast(`🛡️ ${name} is Moderator of this group`);
+        }
+        loadMembers(); return;
     }
     if (action === 'removeMod') {
-        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
+        if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+        if (GROUP_ID === 'official_global') {
+            await set(ref(db, `users/${uid}/role`), 'member');
+        } else {
+            await remove(ref(db, `groups/${GROUP_ID}/roles/${uid}`));
+        }
         showToast(`👤 ${name} role removed`);
+        loadMembers(); return;
     }
-    if (action === 'mute')   { showToast(`🔇 ${name} muted`); }
-    if (action === 'warn')   { showToast(`⚠️ Warning sent to ${name}`); }
-    if (action === 'kick')   { showToast(`🚫 ${name} removed from group`); }
+    if (action === 'mute') {
+        if (!canModerateGroup()) { showToast('⛔ Mods only'); return; }
+        await set(ref(db, `groups/${GROUP_ID}/muted/${uid}`), { mutedAt: Date.now(), by: currentUser.uid });
+        showToast(`🔇 ${name} muted`); return;
+    }
+    if (action === 'warn') { showToast(`⚠️ Warning sent to ${name}`); return; }
+    if (action === 'kick') {
+        if (!canModerateGroup()) { showToast('⛔ Mods only'); return; }
+        await remove(ref(db, `users/${uid}/groups/${GROUP_ID}`));
+        showToast(`🚫 ${name} removed from group`);
+        loadMembers(); return;
+    }
 }
 window.memberAction = memberAction;
 
@@ -863,7 +917,7 @@ function selectBanDur(btn, dur) {
 window.selectBanDur = selectBanDur;
 
 async function confirmTempBan() {
-    if (!canModerate()) { showToast('⛔ Moderators only'); return; }
+    if (!canModerateGroup()) { showToast('⛔ Moderators only'); return; }
     const name   = currentMemberTarget?.name || 'User';
     const reason = document.getElementById('banReason').value.trim();
     const uid    = await findUidByUsername(name);
@@ -1021,7 +1075,14 @@ function renderTray(tab) {
     } else if (tab === 'gif') {
         renderGifs(body, '');
     } else if (tab === 'mine') {
-        renderMyStickers(body);
+        const grid = document.createElement('div'); grid.className = 'sticker-grid';
+        const add  = document.createElement('div'); add.className = 'add-sticker-btn';
+        add.innerHTML = '➕<span>Add Sticker</span>'; add.onclick = () => showToast('🖼️ Upload sticker coming soon!');
+        grid.appendChild(add);
+        body.appendChild(grid);
+        const e = document.createElement('div'); e.className = 'tray-empty';
+        e.innerHTML = '<div style="font-size:2rem;margin-bottom:8px;">🎭</div><p>No custom stickers yet.<br>Tap + to add!</p>';
+        body.appendChild(e);
     }
 }
 
@@ -1035,126 +1096,22 @@ function renderEmojiGrid(container, emojis) {
     container.appendChild(g);
 }
 
-const GIPHY_KEY = 'dc6zaTOxFJmzC';
-let gifSearchTimer = null;
-
-async function renderGifs(container, q) {
-    container.innerHTML = '<div class="tray-empty"><p style="color:#444;">Loading GIFs...</p></div>';
-    try {
-        const url = q.trim()
-            ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=12&rating=pg-13`
-            : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=12&rating=pg-13`;
-        const res  = await fetch(url);
-        const data = await res.json();
-        container.innerHTML = '';
-        if (!data.data?.length) {
-            container.innerHTML = '<div class="tray-empty"><p>No GIFs found</p></div>';
-            return;
-        }
-        const grid = document.createElement('div'); grid.className = 'gif-grid';
-        data.data.forEach(gif => {
-            const preview = gif.images?.fixed_width_small?.url || gif.images?.preview_gif?.url;
-            const full    = gif.images?.fixed_width?.url || gif.images?.original?.url;
-            if (!preview || !full) return;
-            const item = document.createElement('div'); item.className = 'gif-item';
-            item.innerHTML = `<img src="${preview}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`;
-            item.onclick = () => sendGif(full);
-            grid.appendChild(item);
-        });
-        container.appendChild(grid);
-    } catch(err) {
-        container.innerHTML = '<div class="tray-empty"><p style="color:#555;">Failed to load GIFs</p></div>';
-    }
-}
-
-async function sendGif(url) {
-    if (!currentUser) return;
-    closeStickerTray();
-    const msgData = {
-        uid:        currentUser.uid,
-        senderName: currentUserData?.username || 'User',
-        senderRole: currentUserRole,
-        text:       '',
-        type:       'gif',
-        mediaURL:   url,
-        timestamp:  Date.now(),
-        avatarBg:   '#1a1030',
-        avatarColor: roleColor(currentUserRole),
-        photoURL:   currentUserData?.photoURL || '',
-    };
-    try {
-        await push(ref(db, `messages/${GROUP_ID}`), msgData);
-        await update(ref(db, `groups/${GROUP_ID}`), { lastMessage: '🎬 GIF', lastSender: currentUserData?.username || 'User', lastMessageAt: Date.now() });
-    } catch(e) {}
-}
-window.sendGif = sendGif;
-
-async function renderMyStickers(container) {
+function renderGifs(container, q) {
     container.innerHTML = '';
-    const grid = document.createElement('div'); grid.className = 'sticker-grid';
-    const addBtn = document.createElement('div'); addBtn.className = 'add-sticker-btn';
-    addBtn.innerHTML = '➕<span>Add</span>';
-    addBtn.onclick = () => uploadCustomSticker(container);
-    grid.appendChild(addBtn);
+    const grid = document.createElement('div'); grid.className = 'gif-grid';
+    ['🎬','🌊','🔥','😂','✨','💫','🎉','🌙','❤️','🚀','🌸','🎵'].forEach(p => {
+        const item = document.createElement('div'); item.className = 'gif-item'; item.textContent = p;
+        item.style.fontSize = '2.5rem';
+        item.onclick = () => { sendSticker(p); showToast('🎬 Connect Giphy API for real GIFs!'); };
+        grid.appendChild(item);
+    });
     container.appendChild(grid);
-
-    if (!currentUser) return;
-    const loading = document.createElement('div'); loading.className = 'tray-empty';
-    loading.innerHTML = '<p style="color:#444;">Loading...</p>';
-    container.appendChild(loading);
-
-    try {
-        const snap = await get(ref(db, `users/${currentUser.uid}/stickers`));
-        loading.remove();
-        if (!snap.exists()) {
-            const empty = document.createElement('div'); empty.className = 'tray-empty';
-            empty.innerHTML = '<div style="font-size:2rem;margin-bottom:6px;">🎭</div><p>No stickers yet.<br>Tap + to add!</p>';
-            container.appendChild(empty);
-            return;
-        }
-        Object.entries(snap.val()).forEach(([key, s]) => {
-            const item = document.createElement('div'); item.className = 'sticker-item';
-            item.innerHTML = `<img src="${s.url}" style="width:100%;height:100%;object-fit:cover;border-radius:13px;">`;
-            item.onclick = () => sendStickerImage(s.url);
-            let pt;
-            item.addEventListener('touchstart', () => { pt = setTimeout(() => { if (confirm('Delete sticker?')) { remove(ref(db, `users/${currentUser.uid}/stickers/${key}`)); item.remove(); showToast('🗑️ Deleted'); } }, 700); });
-            item.addEventListener('touchend',   () => clearTimeout(pt));
-            item.addEventListener('touchmove',  () => clearTimeout(pt));
-            grid.appendChild(item);
-        });
-    } catch(err) { loading.innerHTML = '<p style="color:#555;">Load failed</p>'; }
+    const note = document.createElement('div'); note.className = 'tray-empty';
+    note.innerHTML = '<p style="color:#333;font-size:11px;">Connect Giphy API in group-chat.js for real GIFs 🎬</p>';
+    container.appendChild(note);
 }
 
-async function uploadCustomSticker(container) {
-    if (!currentUser) { showToast('⚠️ Sign in first'); return; }
-    const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        showToast('⬆️ Uploading sticker...'); closeStickerTray();
-        try {
-            const fd = new FormData();
-            fd.append('file', file); fd.append('upload_preset', CLOUDINARY_PRESET); fd.append('folder', 'custom-stickers');
-            const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!data.secure_url) { showToast('❌ Upload failed'); return; }
-            await push(ref(db, `users/${currentUser.uid}/stickers`), { url: data.secure_url, createdAt: Date.now() });
-            showToast('✅ Sticker added!');
-        } catch(err) { showToast('❌ Upload failed'); }
-    };
-    input.click();
-}
-
-async function sendStickerImage(url) {
-    if (!currentUser) return; closeStickerTray();
-    const msgData = { uid: currentUser.uid, senderName: currentUserData?.username || 'User', senderRole: currentUserRole, text: '', type: 'sticker-image', mediaURL: url, timestamp: Date.now(), avatarBg: '#1a1030', avatarColor: roleColor(currentUserRole), photoURL: currentUserData?.photoURL || '' };
-    try { await push(ref(db, `messages/${GROUP_ID}`), msgData); } catch(e) {}
-}
-window.sendStickerImage = sendStickerImage;
-
-function searchGif(q) {
-    clearTimeout(gifSearchTimer);
-    gifSearchTimer = setTimeout(() => renderGifs(document.getElementById('trayBody'), q), 500);
-}
+function searchGif(q) { renderGifs(document.getElementById('trayBody'), q); }
 window.searchGif = searchGif;
 
 function sendEmojiToInput(em) {
@@ -1188,141 +1145,27 @@ function attachAction(type) {
 }
 window.attachAction = attachAction;
 
-// ══ VOICE RECORDING (real MediaRecorder) ═════════
-let mediaRecorder  = null;
-let audioChunks    = [];
-let recordStart    = 0;
-let recordInterval = null;
-let currentAudio   = null;
-
-async function startRecording() {
-    if (isRecording) return;
-    try {
-        const stream  = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks   = [];
-        recordStart   = Date.now();
-
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.start(100);
-        isRecording = true;
-
-        const btn = document.getElementById('voiceBtn');
-        btn.classList.add('recording');
-
-        let secs = 0;
-        recordInterval = setInterval(() => {
-            secs++;
-            btn.textContent = secs < 60
-                ? `${secs}s`
-                : `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
-            if (secs >= 120) stopRecording();
-        }, 1000);
-
-    } catch(err) {
-        showToast('🎤 Microphone permission denied');
-    }
-}
+// ══ VOICE RECORDING — coming soon ════════════════
+function startRecording() { showToast('🎤 Voice messages coming soon!'); }
 window.startRecording = startRecording;
-
-async function stopRecording() {
-    if (!isRecording || !mediaRecorder) return;
-    isRecording = false;
-    clearInterval(recordInterval);
-
-    const btn = document.getElementById('voiceBtn');
-    btn.classList.remove('recording');
-    btn.textContent = '🎤';
-
-    const duration = Math.round((Date.now() - recordStart) / 1000);
-    if (duration < 1) {
-        mediaRecorder.stream?.getTracks().forEach(t => t.stop());
-        mediaRecorder = null; audioChunks = [];
-        showToast('⚠️ Hold longer to record');
-        return;
-    }
-
-    mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        mediaRecorder.stream?.getTracks().forEach(t => t.stop());
-        mediaRecorder = null; audioChunks = [];
-
-        showToast('📤 Sending voice message...');
-        try {
-            const formData = new FormData();
-            formData.append('file', blob, 'voice.webm');
-            formData.append('upload_preset', CLOUDINARY_PRESET);
-            formData.append('folder', 'voice-messages');
-
-            const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if (!data.secure_url) { showToast('❌ Upload failed'); return; }
-
-            const durStr = duration < 60
-                ? `0:${String(duration).padStart(2,'0')}`
-                : `${Math.floor(duration/60)}:${String(duration%60).padStart(2,'0')}`;
-
-            const msgData = {
-                uid:        currentUser.uid,
-                senderName: currentUserData?.username || 'User',
-                senderRole: currentUserRole,
-                text:       '',
-                type:       'voice',
-                mediaURL:   data.secure_url,
-                duration:   durStr,
-                timestamp:  Date.now(),
-                avatarBg:   '#1a1030',
-                avatarColor: roleColor(currentUserRole),
-                photoURL:   currentUserData?.photoURL || '',
-            };
-            await push(ref(db, `messages/${GROUP_ID}`), msgData);
-            await update(ref(db, `groups/${GROUP_ID}`), {
-                lastMessage: '🎤 Voice message',
-                lastSender:  currentUserData?.username || 'User',
-                lastMessageAt: Date.now(),
-            });
-            showToast('✅ Voice message sent!');
-        } catch(err) {
-            console.error('Voice upload error:', err);
-            showToast('❌ Failed to send');
-        }
-    };
-    mediaRecorder.stop();
-}
+function stopRecording() {}
 window.stopRecording = stopRecording;
-
-function playVoice(btn) {
-    const url = btn.dataset.url;
-    if (!url) return;
-
-    if (currentAudio && !currentAudio.paused) {
-        currentAudio.pause();
-        document.querySelectorAll('.voice-play').forEach(b => b.textContent = '▶');
-        if (currentAudio._src === url) { currentAudio = null; return; }
-    }
-
-    const audio = new Audio(url);
-    audio._src = url;
-    currentAudio = audio;
-    btn.textContent = '⏸';
-
-    audio.onended = () => { btn.textContent = '▶'; currentAudio = null; };
-    audio.onerror = () => { btn.textContent = '▶'; showToast('❌ Playback failed'); currentAudio = null; };
-    audio.play().catch(() => { btn.textContent = '▶'; });
-}
+function playVoice(btn) { showToast('🎤 Voice messages coming soon!'); }
 window.playVoice = playVoice;
 
 // ══ USER PROFILE POPUP ════════════════════════════
-function showUserProfile(name, age, location, initial, bg, role) {
-    document.getElementById('ppAv').textContent = initial;
-    document.getElementById('ppAv').style.background = bg;
+function showUserProfile(name, age, location, initial, bg, role, photoURL) {
+    const avEl = document.getElementById('ppAv');
+    avEl.style.background = bg;
+    if (photoURL) {
+        avEl.innerHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:20px;">`;
+    } else {
+        avEl.textContent = initial;
+    }
     document.getElementById('ppName').textContent = name;
     document.getElementById('ppMeta').textContent = [age, location].filter(Boolean).join(' · ');
-
-    // Role badge
     const badgeEl = document.getElementById('ppRoleBadge');
     if (badgeEl) badgeEl.innerHTML = getRoleBadgeHTML(role, true);
-
     document.getElementById('profilePopupOverlay').classList.add('show');
 }
 window.showUserProfile = showUserProfile;
@@ -1362,6 +1205,7 @@ function onInput(el) {
     const has = el.value.trim().length > 0;
     document.getElementById('sendBtn').style.display  = has ? 'flex' : 'none';
     document.getElementById('voiceBtn').style.display = has ? 'none' : 'flex';
+    if (has) broadcastTyping();
 }
 window.onInput = onInput;
 
@@ -1384,11 +1228,23 @@ function buildWaveform(id) {
     });
 }
 
-// ══ ROLE HELPERS ══════════════════════════════════
-function isOwner()      { return currentUserRole === 'owner'; }
-function canAdmin()     { return ['owner','admin'].includes(currentUserRole); }
-function canModerate()  { return ['owner','admin','mod'].includes(currentUserRole); }
-function canSendMessage() { return !isReadMode || canAdmin(); }
+// ══ ROLE HELPERS — TWO-TIER ═══════════════════════
+// APP-LEVEL  (users/{uid}/role):             owner/admin/mod — power everywhere
+// GROUP-LEVEL (groups/{id}/roles/{uid}):     admin/mod — power in that group only
+// App-level always beats group-level. "Owner" = app owner only, never per-group.
+
+function isOwner()          { return currentUserRole === 'owner'; }
+function canAdmin()         { return ['owner','admin'].includes(currentUserRole); }
+function canModerate()      { return ['owner','admin','mod'].includes(currentUserRole); }
+
+// Can manage THIS group (edit info, avatar, clear chat, modes)
+function canManageGroup()   { return canAdmin() || currentGroupRole === 'admin'; }
+
+// Can moderate members in THIS group (warn, kick, mute, ban)
+function canModerateGroup() { return canModerate() || ['admin','mod'].includes(currentGroupRole); }
+
+// Sending: respects readMode unless app admin or group admin
+function canSendMessage()   { return !isReadMode || canAdmin() || currentGroupRole === 'admin'; }
 
 function roleColor(role) {
     const map = { owner:'#ffd700', admin:'#ff3e1d', mod:'#a78bfa', member:'#a78bfa' };
@@ -1401,6 +1257,7 @@ function getRoleBadgeHTML(role, large = false) {
     if (role === 'admin') return `<span class="sender-role-badge admin" style="${size}">⚙️ Admin</span>`;
     if (role === 'mod')   return `<span class="sender-role-badge mod" style="${size}">🛡️ Mod</span>`;
     return '';
+    // Note: group-admin and group-mod show as ⚙️ Admin / 🛡️ Mod since they use same roles
 }
 
 // ══ FIND USER BY USERNAME ════════════════════════
@@ -1455,29 +1312,60 @@ async function loadMembers() {
         const snap = await get(ref(db, 'users'));
         if (!snap.exists()) { list.innerHTML = ''; return; }
 
-        const buckets = { owner: [], admin: [], mod: [], member: [] };
+        const isOfficialGroup = GROUP_ID === 'official_global';
+
+        // Load group-level roles (individual groups only)
+        const grSnap = isOfficialGroup ? null : await get(ref(db, `groups/${GROUP_ID}/roles`));
+        const grRoles = grSnap?.exists() ? grSnap.val() : {};
+
+        // Official group: owner/admin/mod/member
+        // Individual group: admin/mod/member ONLY — no owner section
+        const buckets = isOfficialGroup
+            ? { owner: [], admin: [], mod: [], member: [] }
+            : { admin: [], mod: [], member: [] };
+
         let onlineCount = 0;
 
         snap.forEach(child => {
-            const u = child.val();
-            if (!u?.groups?.[GROUP_ID]) return; // not in this group
-            const role = (child.key === OWNER_UID) ? 'owner' : (u.role || 'member');
+            const uid = child.key;
+            const u   = child.val();
+            if (!u?.groups?.[GROUP_ID]) return;
+
+            let role;
+            if (isOfficialGroup) {
+                // Official: use app-level role
+                role = (uid === OWNER_UID) ? 'owner' : (u.role || 'member');
+            } else {
+                // Individual group:
+                // App admin/mod keep their badge but no "owner" label
+                if (['admin','mod'].includes(u.role)) role = u.role;
+                else if (grRoles[uid] === 'admin')   role = 'admin';
+                else if (grRoles[uid] === 'mod')     role = 'mod';
+                else                                 role = 'member';
+            }
+
             if (u.isOnline) onlineCount++;
-            buckets[role]?.push({ uid: child.key, ...u, role });
+            if (buckets[role] !== undefined) buckets[role].push({ uid, ...u, role });
+            else buckets.member.push({ uid, ...u, role: 'member' });
         });
 
-        // Update online count
         const oc = document.getElementById('onlineCount');
         if (oc) oc.textContent = onlineCount;
 
         list.innerHTML = '';
 
-        const sectionDefs = [
-            { key: 'owner', label: '👑 Owner' },
-            { key: 'admin', label: '⚙️ Admins' },
-            { key: 'mod',   label: '🛡️ Moderators' },
-            { key: 'member',label: '👤 Members' },
-        ];
+        const sectionDefs = isOfficialGroup
+            ? [
+                { key: 'owner',  label: '👑 Owner' },
+                { key: 'admin',  label: '⚙️ Admins' },
+                { key: 'mod',    label: '🛡️ Moderators' },
+                { key: 'member', label: '👤 Members' },
+              ]
+            : [
+                { key: 'admin',  label: '⚙️ Admins' },
+                { key: 'mod',    label: '🛡️ Moderators' },
+                { key: 'member', label: '👤 Members' },
+              ];
 
         sectionDefs.forEach(({ key, label }) => {
             if (!buckets[key].length) return;
@@ -1489,17 +1377,16 @@ async function loadMembers() {
             list.appendChild(sectionLabel);
 
             buckets[key].forEach(u => {
-                const initial   = (u.username || '?')[0].toUpperCase();
-                const roleClass = { owner:'role-owner', admin:'role-admin', mod:'role-mod', member:'' }[u.role] || '';
-                const roleBadge = u.role !== 'member'
-                    ? `<span class="member-role ${roleClass}">${getRoleBadgeHTML(u.role)}</span>` : '';
-                const onlineDot = u.isOnline ? '<div class="member-online-dot"></div>' : '';
-                const isOwnerRow = u.uid === OWNER_UID;
+                const initial    = (u.username || '?')[0].toUpperCase();
+                const roleBadge  = u.role !== 'member' ? getRoleBadgeHTML(u.role) : '';
+                const onlineDot  = u.isOnline ? '<div class="member-online-dot"></div>' : '';
+                const isAppOwner = u.uid === OWNER_UID;
+                const avBg       = isAppOwner ? 'linear-gradient(135deg,var(--accent),var(--accent2))' : '#1a1030';
 
                 const row = document.createElement('div');
                 row.className = 'member-row';
                 row.innerHTML = `
-                    <div class="member-av" style="background:${isOwnerRow ? 'linear-gradient(135deg,var(--accent),var(--accent2))' : '#1a1030'};color:#fff;">
+                    <div class="member-av" style="background:${avBg};color:#fff;overflow:hidden;position:relative;">
                         ${u.photoURL ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : initial}
                         ${onlineDot}
                     </div>
@@ -1510,10 +1397,10 @@ async function loadMembers() {
                     <div class="member-more" id="more-${u.uid}">⋯</div>
                 `;
                 row.querySelector('.member-av').onclick = () =>
-                    showUserProfile(u.username, u.age, u.khaw, initial, '#1a1030', u.role);
+                    showUserProfile(u.username, u.age, u.khaw, initial, '#1a1030', u.role, u.photoURL || '');
                 row.querySelector(`#more-${u.uid}`).onclick = (e) => {
                     e.stopPropagation();
-                    if (u.uid !== OWNER_UID) openMemberOptions(e, u.username, u.role);
+                    if (!isAppOwner) openMemberOptions(e, u.username, u.role, u.uid);
                 };
                 list.appendChild(row);
             });
