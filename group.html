@@ -111,77 +111,21 @@
             box-shadow: 0 0 6px var(--accent);
         }
 
-        /* CHIPS */
-        .filter-row {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            margin-bottom: 12px;
-        }
-        .filter-row::-webkit-scrollbar { display: none; }
-
-        .chip {
-            flex-shrink: 0;
-            padding: 7px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.04);
-            color: #777;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .chip.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: white;
-            box-shadow: 0 0 16px var(--glow);
-        }
-        .chip:active { transform: scale(0.93); }
-
-        /* SEARCH */
-        .search-box {
-            background: rgba(255,255,255,0.04);
-            border-radius: 16px;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid var(--border);
-            transition: border-color 0.2s;
-        }
-        .search-box:focus-within {
-            border-color: rgba(255,62,29,0.4);
-            box-shadow: 0 0 0 3px rgba(255,62,29,0.07);
-        }
-        .search-box input {
-            background: none; border: none;
-            color: white; width: 100%; outline: none;
-            font-size: 0.9rem;
-            font-family: 'Nunito', sans-serif;
-        }
-        .search-box input::placeholder { color: #444; }
-        .search-clear {
-            font-size: 1rem;
-            opacity: 0;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            color: #555;
-        }
-        .search-clear.visible { opacity: 1; }
-
         /* ══ CONTENT ══ */
         .content {
             flex: 1;
             overflow-y: auto;
-            padding: 12px 16px 100px;
+            padding: 0 16px 100px;
             position: relative;
             z-index: 5;
             scrollbar-width: none;
         }
         .content::-webkit-scrollbar { display: none; }
+
+        /* ══ PINNED OFFICIAL CARD ══ */
+        .official-section {
+            padding: 12px 0 4px;
+        }
 
         .section-label {
             font-size: 10px;
@@ -192,7 +136,6 @@
             margin: 4px 4px 10px;
         }
 
-        /* ══ PINNED OFFICIAL CARD ══ */
         .pinned-card {
             background: linear-gradient(135deg, #1a0a0a, #140404);
             border-radius: 22px;
@@ -200,7 +143,7 @@
             display: flex;
             align-items: center;
             border: 1px solid rgba(255,62,29,0.25);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             position: relative;
             overflow: hidden;
             cursor: pointer;
@@ -251,6 +194,78 @@
             box-shadow: 0 0 20px rgba(255,62,29,0.3);
         }
 
+        /* ══ SEARCH + FILTER SECTION (below official) ══ */
+        .search-filter-section {
+            padding: 14px 0 10px;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 8;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            margin-bottom: 10px;
+        }
+
+        /* SEARCH */
+        .search-box {
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            transition: border-color 0.2s;
+            margin-bottom: 10px;
+        }
+        .search-box:focus-within {
+            border-color: rgba(255,62,29,0.4);
+            box-shadow: 0 0 0 3px rgba(255,62,29,0.07);
+        }
+        .search-box input {
+            background: none; border: none;
+            color: white; width: 100%; outline: none;
+            font-size: 0.9rem;
+            font-family: 'Nunito', sans-serif;
+        }
+        .search-box input::placeholder { color: #444; }
+        .search-clear {
+            font-size: 1rem;
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: #555;
+        }
+        .search-clear.visible { opacity: 1; }
+
+        /* CHIPS */
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .filter-row::-webkit-scrollbar { display: none; }
+
+        .chip {
+            flex-shrink: 0;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: #777;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 0 16px var(--glow);
+        }
+        .chip:active { transform: scale(0.93); }
+
         /* ══ GROUP CARD ══ */
         .group-card {
             background: var(--card);
@@ -266,13 +281,6 @@
             cursor: pointer;
             animation: fadeUp 0.35s ease both;
         }
-
-        .group-card:nth-child(1) { animation-delay: 0.04s; }
-        .group-card:nth-child(2) { animation-delay: 0.08s; }
-        .group-card:nth-child(3) { animation-delay: 0.12s; }
-        .group-card:nth-child(4) { animation-delay: 0.16s; }
-        .group-card:nth-child(5) { animation-delay: 0.20s; }
-        .group-card:nth-child(6) { animation-delay: 0.24s; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(16px); }
@@ -358,8 +366,6 @@
             align-items: center;
             box-shadow: 0 0 10px var(--glow);
         }
-
-        .muted-icon { font-size: 14px; opacity: 0.25; }
 
         /* Empty state */
         .empty-state {
@@ -679,6 +685,9 @@
         }
         .placeholder-content .big-emoji { font-size: 4rem; }
         .placeholder-content p { font-size: 14px; color: #666; line-height: 1.6; }
+
+        /* Context menu delete option */
+        .sheet-option.delete-group { color: #ff4444; display: flex; }
     </style>
 </head>
 <body>
@@ -695,47 +704,55 @@
         <div class="header-actions">
             <div class="h-btn" id="notifBtn" onclick="openNotif()">
                 🔔
-                <div class="notif-dot" id="notifDot" style="display:none;"></div>
+                <div class="notif-dot" id="notifDot"></div>
             </div>
+            <div class="h-btn" onclick="openSettings()">⚙️</div>
         </div>
-    </div>
-
-    <div class="filter-row">
-        <div class="chip active" data-cat="all" onclick="selectChip(this,'all')">All</div>
-        <div class="chip" data-cat="dating" onclick="selectChip(this,'dating')">❤️ Dating</div>
-        <div class="chip" data-cat="gaming" onclick="selectChip(this,'gaming')">🎮 Gaming</div>
-        <div class="chip" data-cat="fitness" onclick="selectChip(this,'fitness')">💪 Fitness</div>
-        <div class="chip" data-cat="food" onclick="selectChip(this,'food')">🍜 Food</div>
-        <div class="chip" data-cat="vibes" onclick="selectChip(this,'vibes')">🌙 Vibes</div>
-    </div>
-
-    <div class="search-box">
-        <span style="opacity:0.35;">🔍</span>
-        <input type="text" id="groupSearch" placeholder="Search communities..." oninput="handleSearch(this)">
-        <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
     </div>
 </div>
 
 <!-- ══ CONTENT ══ -->
 <div class="content">
 
-    <div class="section-label">📌 Official</div>
-    <div class="pinned-card" onclick="openOfficialChat()">
-        <div class="pinned-label">PINNED</div>
-        <div class="official-avatar">ZO</div>
-        <div class="group-info">
-            <div class="group-name">Zo-Tinder Official <span class="verified">✦</span></div>
-            <span class="member-info" id="officialMeta">Loading...</span>
-            <span class="last-msg" id="officialLastMsg">...</span>
-        </div>
-        <div class="card-right">
-            <span class="card-time" id="officialTime"></span>
-            <div class="notif-badge" id="officialBadge" style="display:none;">0</div>
+    <!-- Official pinned card -->
+    <div class="official-section">
+        <div class="section-label">📌 Official</div>
+        <div class="pinned-card" onclick="openOfficialChat()">
+            <div class="pinned-label">PINNED</div>
+            <div class="official-avatar">ZO</div>
+            <div class="group-info">
+                <div class="group-name">Zo-Tinder Official <span class="verified">✦</span></div>
+                <span class="member-info" id="officialMeta">Loading...</span>
+                <span class="last-msg" id="officialLastMsg">...</span>
+            </div>
+            <div class="card-right">
+                <span class="card-time" id="officialTime"></span>
+                <div class="notif-badge" id="officialBadge" style="display:none;">0</div>
+            </div>
         </div>
     </div>
 
-    <div class="section-label" style="margin-top:18px;">👥 Groups</div>
-    <!-- group.js renders cards here from Firebase -->
+    <!-- Search + Filter (below official, sticky) -->
+    <div class="search-filter-section">
+        <div class="search-box">
+            <span style="opacity:0.35;">🔍</span>
+            <input type="text" id="groupSearch" placeholder="Search communities..."
+                   oninput="handleSearch(this)">
+            <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
+        </div>
+        <div class="filter-row">
+            <div class="chip active" data-cat="all"     onclick="setChip(this,'all')">All</div>
+            <div class="chip" data-cat="dating"         onclick="setChip(this,'dating')">❤️ Dating</div>
+            <div class="chip" data-cat="gaming"         onclick="setChip(this,'gaming')">🎮 Gaming</div>
+            <div class="chip" data-cat="fitness"        onclick="setChip(this,'fitness')">💪 Fitness</div>
+            <div class="chip" data-cat="food"           onclick="setChip(this,'food')">🍜 Food</div>
+            <div class="chip" data-cat="vibes"          onclick="setChip(this,'vibes')">🌙 Vibes</div>
+            <div class="chip" data-cat="other"          onclick="setChip(this,'other')">✨ Other</div>
+        </div>
+    </div>
+
+    <!-- Groups list -->
+    <div class="section-label" style="margin-top:4px;">👥 My Groups</div>
     <div id="groupList">
         <div style="text-align:center;padding:40px 20px;color:#333;font-size:13px;">Loading groups...</div>
     </div>
@@ -770,6 +787,7 @@
         <div class="sheet-divider"></div>
         <div class="sheet-option" onclick="doOption('share')"><span class="opt-icon">🔗</span>Share Invite Link</div>
         <div class="sheet-divider"></div>
+        <div class="sheet-option delete-group" id="ctxDeleteGroup" onclick="doOption('delete')"><span class="opt-icon">🗑️</span>Delete Group</div>
         <div class="sheet-option danger" onclick="doOption('leave')"><span class="opt-icon">🚪</span>Leave Group</div>
     </div>
 </div>
@@ -785,12 +803,12 @@
         <div class="modal-field">
             <label class="modal-label">Category</label>
             <div class="category-grid">
-                <div class="cat-btn" data-val="dating" onclick="selectCat(this)">❤️ Dating</div>
-                <div class="cat-btn" data-val="gaming" onclick="selectCat(this)">🎮 Gaming</div>
+                <div class="cat-btn" data-val="dating"  onclick="selectCat(this)">❤️ Dating</div>
+                <div class="cat-btn" data-val="gaming"  onclick="selectCat(this)">🎮 Gaming</div>
                 <div class="cat-btn" data-val="fitness" onclick="selectCat(this)">💪 Fitness</div>
-                <div class="cat-btn" data-val="food" onclick="selectCat(this)">🍜 Food</div>
-                <div class="cat-btn" data-val="vibes" onclick="selectCat(this)">🌙 Vibes</div>
-                <div class="cat-btn" data-val="other" onclick="selectCat(this)">✨ Other</div>
+                <div class="cat-btn" data-val="food"    onclick="selectCat(this)">🍜 Food</div>
+                <div class="cat-btn" data-val="vibes"   onclick="selectCat(this)">🌙 Vibes</div>
+                <div class="cat-btn" data-val="other"   onclick="selectCat(this)">✨ Other</div>
             </div>
         </div>
         <div class="modal-actions">
@@ -802,14 +820,40 @@
 
 <!-- ══ NOTIFICATIONS ══ -->
 <div class="overlay" id="notifOverlay" onclick="closeNotif()">
+    <div class="sheet" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto;">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Notifications</div>
+        <!-- group.js populates this with real messages -->
+        <div id="notifList">
+            <div style="padding:30px 20px;text-align:center;color:#444;font-size:13px;">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="overlay" id="settingsOverlay" onclick="closeSettings()">
     <div class="sheet" onclick="event.stopPropagation()">
         <div class="sheet-handle"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 12px;">
-            <div class="sheet-title" style="margin-bottom:0;padding-bottom:0;">Notifications</div>
-            <div onclick="markAllRead()" style="font-size:12px;color:#ff3e1d;font-weight:800;cursor:pointer;padding:4px 8px;">Mark all read</div>
+        <div class="sheet-title">Settings</div>
+        <div class="settings-item" onclick="showToast('🔕 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🔕</span><span class="s-label">Mute All Groups</span></div>
+            <span class="s-arrow">›</span>
         </div>
-        <div id="notifList">
-            <div style="text-align:center;padding:30px 20px;color:#444;font-size:13px;">No new notifications</div>
+        <div class="settings-item" onclick="showToast('🎨 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🎨</span><span class="s-label">Chat Theme</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('🔒 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🔒</span><span class="s-label">Privacy</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('📦 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">📦</span><span class="s-label">Archived Groups</span></div>
+            <span class="s-arrow">›</span>
+        </div>
+        <div class="settings-item" onclick="showToast('🛟 Coming soon!'); closeSettings()">
+            <div class="settings-left"><span class="s-icon">🛟</span><span class="s-label">Help &amp; Support</span></div>
+            <span class="s-arrow">›</span>
         </div>
     </div>
 </div>
@@ -835,22 +879,25 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── LOCAL STATE (UI only — group.js owns filtering logic) ──
 let contextTarget = null;
 let selectedCat = '';
-let longPressTimer = null;
+let toastTimer = null;
 
-// ── CHIP FILTER ──
-function selectChip(el, cat) {
+// ── CHIP HANDLER ── delegates to group.js's setActiveCategory
+function setChip(el, cat) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
+    // group.js owns the filter state
     if (typeof setActiveCategory === 'function') setActiveCategory(cat);
 }
 
-// ── SEARCH ──
+// ── SEARCH HANDLER ── delegates to group.js's onGroupSearch
 function handleSearch(input) {
     document.getElementById('searchClear').classList.toggle('visible', input.value.length > 0);
     if (typeof onGroupSearch === 'function') onGroupSearch();
 }
+
 function clearSearch() {
     const input = document.getElementById('groupSearch');
     input.value = '';
@@ -859,35 +906,81 @@ function clearSearch() {
 }
 
 // ── CONTEXT MENU ──
+function openContext(card) {
+    contextTarget = card;
+    document.getElementById('contextName').textContent = card.dataset.name || 'Group';
+    // Always show delete — permission check happens inside deleteGroupFirebase
+    const deleteBtn = document.getElementById('ctxDeleteGroup');
+    if (deleteBtn) deleteBtn.style.display = 'flex';
+    document.getElementById('contextOverlay').classList.add('show');
+}
+
 function closeContext() {
     document.getElementById('contextOverlay').classList.remove('show');
-    contextTarget = null;
-    window._contextCard = null;
+    // NOTE: do NOT null contextTarget here — doOption needs it
 }
-function doOption(action) {
-    const card = window._contextCard;
-    closeContext();
-    if (action === 'mute')  showToast('🔇 Notifications muted');
-    if (action === 'pin')   showToast('📌 Pinned to top');
-    if (action === 'share') showToast('🔗 Invite link copied!');
+
+async function doOption(action) {
+    // ── Capture BEFORE closing so contextTarget stays valid ──
+    const card    = contextTarget;
+    const groupId = card?.dataset.id   || '';
+    const name    = card?.dataset.name || 'this group';
+
+    // Close sheet
+    document.getElementById('contextOverlay').classList.remove('show');
+    contextTarget = null;
+
+    if (action === 'mute')  { showToast('🔇 Notifications muted'); return; }
+    if (action === 'pin')   { showToast('📌 Pinned to top'); return; }
+    if (action === 'share') {
+        const link = location.origin + '/group-chat.html?id=' + groupId + '&name=' + encodeURIComponent(name);
+        navigator.clipboard?.writeText(link).catch(()=>{});
+        showToast('🔗 Invite link copied!');
+        return;
+    }
     if (action === 'read') {
         card?.querySelector('.notif-badge')?.remove();
         showToast('✅ Marked as read');
+        return;
     }
-    if (action === 'leave') {
+
+    if (action === 'delete') {
+        if (!groupId) { showToast('❌ Could not identify group'); return; }
+        if (!confirm('Delete "' + name + '"?\n\nThis removes the group and ALL messages for everyone permanently.')) return;
+
+        // Animate card out IMMEDIATELY — do not wait for Firebase
         if (card) {
-            card.style.transition = '0.3s';
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(-20px)';
-            setTimeout(() => card.remove(), 300);
+            card.style.transition = '0.25s ease';
+            card.style.opacity    = '0';
+            card.style.transform  = 'translateX(-40px)';
+            setTimeout(() => { try { card.remove(); } catch(e){} }, 280);
         }
-        if (typeof window.doLeaveFromContext === 'function') window.doLeaveFromContext();
+
+        showToast('🗑️ Deleting group...');
+        if (typeof deleteGroupFirebase === 'function') {
+            const ok = await deleteGroupFirebase(groupId);
+            showToast(ok ? '✅ "' + name + '" deleted permanently' : '❌ Not authorized to delete this group');
+        }
+        return;
+    }
+
+    if (action === 'leave') {
+        if (!groupId) return;
+        // Animate out immediately
+        if (card) {
+            card.style.transition = '0.25s ease';
+            card.style.opacity    = '0';
+            card.style.transform  = 'translateX(-40px)';
+            setTimeout(() => { try { card.remove(); } catch(e){} }, 280);
+        }
+        if (typeof leaveGroupFirebase === 'function') leaveGroupFirebase(groupId, true);
         showToast('🚪 Left group');
     }
 }
 
 // ── CREATE GROUP ──
 function openCreateModal() { document.getElementById('createOverlay').classList.add('show'); }
+
 function closeCreate(e) {
     if (!e || e.target.id === 'createOverlay') {
         document.getElementById('createOverlay').classList.remove('show');
@@ -896,20 +989,29 @@ function closeCreate(e) {
         selectedCat = '';
     }
 }
+
 function selectCat(btn) {
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedCat = btn.dataset.val;
 }
+
 async function createGroup() {
     const name = document.getElementById('newGroupName').value.trim();
     if (!name)        { showToast('⚠️ Enter a group name'); return; }
     if (!selectedCat) { showToast('⚠️ Pick a category'); return; }
+
     showToast('Creating group...');
+
     if (typeof saveGroupToFirebase === 'function') {
         const result = await saveGroupToFirebase(name, selectedCat);
-        if (result) { closeCreate(); showToast(`🎉 "${name}" created!`); }
-        else showToast('❌ Failed to create group. Try again.');
+        if (result) {
+            closeCreate();
+            showToast(`🎉 "${name}" created! You are the group admin.`);
+            // group.js realtime listener will auto-render the new card
+        } else {
+            showToast('❌ Failed to create group. Try again.');
+        }
     } else {
         showToast('❌ Not connected to Firebase yet.');
     }
@@ -921,11 +1023,10 @@ function openNotif() {
     document.getElementById('notifDot').style.display = 'none';
 }
 function closeNotif() { document.getElementById('notifOverlay').classList.remove('show'); }
-function markAllRead() {
-    if (typeof window.markAllNotifsRead === 'function') window.markAllNotifsRead();
-    showToast('✅ All notifications marked as read');
-    closeNotif();
-}
+
+// ── SETTINGS ──
+function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
 
 // ── NAV ──
 function navigateTo(key) { document.getElementById('page-' + key).classList.add('open'); }
@@ -935,11 +1036,7 @@ function closePage(key) {
     document.getElementById('foot-groups').classList.add('active');
 }
 
-// ── CARD EVENTS (called by group.js after render) ──
-function initCardEvents() {}
-
 // ── TOAST ──
-let toastTimer;
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
