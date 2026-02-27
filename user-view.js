@@ -29,7 +29,7 @@ function getRoleRank(uid, role) {
 
 // ── Get target UID from URL (?uid=xxx) ─────────────────────────────────────
 const params    = new URLSearchParams(window.location.search);
-const targetUID = params.get('uid');
+const targetUID = params.get('uid') || params.get('id');
 
 if (!targetUID) window.location.href = 'home.html';
 
