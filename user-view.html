@@ -167,7 +167,7 @@
         .menu-item.mod    { color: var(--mod);    }
         .menu-item.admin  { color: var(--admin);  }
 
-        .role-mod, .role-admin { display: none; }
+        .role-mod, .role-admin, .role-owner { display: none; }
         .menu-divider { height: 1px; background: rgba(255,255,255,0.06); }
 
         /* ══ AVATAR SECTION ═════════════════════════════════════ */
@@ -536,6 +536,55 @@
             cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
         }
         .duration-chip.selected { border-color: var(--mod); background: rgba(167,139,250,0.12); color: var(--mod); }
+
+        /* ── Temp ban status banner ── */
+        .tempban-banner {
+            width: 100%;
+            background: rgba(255,62,29,0.08);
+            border: 1px solid rgba(255,62,29,0.25);
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .tempban-banner-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .tempban-banner-text {
+            font-size: 13px;
+            font-weight: 800;
+            color: #ff6b50;
+            line-height: 1.4;
+        }
+        .tempban-banner-text span { color: #ff3e1d; }
+
+        /* ── Reason field ── */
+        .reason-field {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 13px 16px;
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            resize: none;
+            outline: none;
+            margin-bottom: 16px;
+            transition: border-color 0.15s;
+        }
+        .reason-field:focus { border-color: rgba(167,139,250,0.4); }
+        .reason-field::placeholder { color: #333; }
+        .reason-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #444;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -570,14 +619,18 @@
         Block User
     </button>
     <div class="menu-divider role-mod"></div>
-    <button class="menu-item mod role-mod" id="menuTempBan">
-        <span class="menu-icon">⏳</span>
-        Temporary Ban
+    <button class="menu-item mod role-mod" id="menuTempBanToggle">
+        <span class="menu-icon" id="menuTempBanIcon">⏳</span>
+        <span id="menuTempBanLabel">Temporary Ban</span>
     </button>
     <div class="menu-divider role-admin"></div>
     <button class="menu-item admin role-admin" id="menuBan">
         <span class="menu-icon">🔨</span>
         Ban User
+    </button>
+    <button class="menu-item role-owner" id="menuUnban" style="display:none;">
+        <span class="menu-icon">✅</span>
+        Unban User
     </button>
 </div>
 
@@ -601,6 +654,12 @@
     <div class="profile-location fade-up" id="profileLocation" style="display:none;">
         <span>📍</span>
         <span id="locationText"></span>
+    </div>
+
+    <!-- Temp ban banner — shown to staff only -->
+    <div class="tempban-banner fade-up" id="tempBanBanner" style="display:none;">
+        <div class="tempban-banner-icon">🚫</div>
+        <div class="tempban-banner-text" id="tempBanBannerText"></div>
     </div>
 
     <div class="action-row fade-up">
@@ -683,6 +742,8 @@
             <button class="duration-chip" data-hours="72">3 Days</button>
             <button class="duration-chip" data-hours="168">1 Week</button>
         </div>
+        <span class="reason-label">Reason for ban</span>
+        <textarea class="reason-field" id="tempBanReason" rows="3" maxlength="200" placeholder="State the reason for this temporary ban..."></textarea>
         <div class="modal-actions">
             <button class="modal-btn confirm-mod"  id="tempBanConfirmBtn">Apply Temp Ban</button>
             <button class="modal-btn cancel-btn"   id="tempBanCancelBtn">Cancel</button>
@@ -695,10 +756,38 @@
     <div class="modal-sheet">
         <div class="modal-handle"></div>
         <div class="modal-title">🔨 Ban User</div>
-        <div class="modal-sub">This will permanently ban this user. Only an admin or owner can reverse this.</div>
+        <div class="modal-sub">This will permanently ban this user. Only the owner can reverse this.</div>
+        <span class="reason-label">Reason for ban</span>
+        <textarea class="reason-field" id="banReason" rows="3" maxlength="200" placeholder="State the reason for this permanent ban..."></textarea>
         <div class="modal-actions">
             <button class="modal-btn confirm-danger" id="banConfirmBtn">Ban User</button>
             <button class="modal-btn cancel-btn"     id="banCancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ LIFT TEMP BAN MODAL ══ -->
+<div class="modal-overlay" id="liftTempBanModal">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">🔓 Lift Temporary Ban</div>
+        <div class="modal-sub">Are you sure you want to lift this user's temporary ban early?</div>
+        <div class="modal-actions">
+            <button class="modal-btn confirm-mod"  id="liftTempBanConfirmBtn">Yes, Lift Ban</button>
+            <button class="modal-btn cancel-btn"   id="liftTempBanCancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ UNBAN MODAL ══ -->
+<div class="modal-overlay" id="unbanModal">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">✅ Unban User</div>
+        <div class="modal-sub">This will permanently lift the ban and restore full access to this account.</div>
+        <div class="modal-actions">
+            <button class="modal-btn confirm-mod"  id="unbanConfirmBtn">Unban User</button>
+            <button class="modal-btn cancel-btn"   id="unbanCancelBtn">Cancel</button>
         </div>
     </div>
 </div>
