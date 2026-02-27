@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getDatabase, ref, get, set, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, get, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // ── FIREBASE CONFIG ──────────────────────────────
 const firebaseConfig = {
@@ -22,39 +22,33 @@ let currentUser = null;
 let currentUserData = null;
 let allGroups = [];
 let activeCategory = 'all';
+let activeSearch = '';
+let lastReadMap = {}; // { groupId: timestamp }
 
-// ── LOAD OFFICIAL CARD IMMEDIATELY (no auth needed) ──
+// ── LOAD OFFICIAL CARD IMMEDIATELY ──
 loadOfficialCard();
 
 // ── WAIT FOR AUTH ────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        window.location.href = 'index.html';
-        return;
-    }
-
+    if (!user) { window.location.href = 'index.html'; return; }
     currentUser = user;
-
-    // Get user data
     const userSnap = await get(ref(db, `users/${user.uid}`));
-    if (userSnap.exists()) {
-        currentUserData = userSnap.val();
-    }
-
-    // Make sure they are in official_global
+    if (userSnap.exists()) currentUserData = userSnap.val();
     await autoJoinOfficial(user.uid);
 
-    // Load their groups realtime
+    // Load lastRead map
+    const lrSnap = await get(ref(db, `users/${user.uid}/lastRead`));
+    if (lrSnap.exists()) lastReadMap = lrSnap.val();
+
     loadUserGroups(user.uid);
+    listenNotifications(user.uid);
 });
 
-// ── AUTO JOIN OFFICIAL GROUP ─────────────────────
+// ── AUTO JOIN OFFICIAL ───────────────────────────
 async function autoJoinOfficial(uid) {
     const officialRef = ref(db, `users/${uid}/groups/official_global`);
     const snap = await get(officialRef);
-    if (!snap.exists()) {
-        await set(officialRef, true);
-    }
+    if (!snap.exists()) await set(officialRef, true);
 }
 
 // ── LOAD OFFICIAL CARD ───────────────────────────
@@ -64,38 +58,34 @@ async function loadOfficialCard() {
     const timeEl  = document.getElementById('officialTime');
     const badgeEl = document.getElementById('officialBadge');
 
-    // Count real members from users node
     try {
         const usersSnap = await get(ref(db, 'users'));
         let memberCount = 0;
         if (usersSnap.exists()) {
-            usersSnap.forEach(u => {
-                if (u.val()?.groups?.official_global) memberCount++;
-            });
+            usersSnap.forEach(u => { if (u.val()?.groups?.official_global) memberCount++; });
         }
 
-        // Listen realtime to messages/official_global for last message
-        const msgsRef = ref(db, 'messages/official_global');
-        onValue(msgsRef, (snap) => {
+        onValue(ref(db, 'messages/official_global'), (snap) => {
             if (!snap.exists()) {
                 if (metaEl) metaEl.textContent = `↑ ${memberCount} members · Official channel`;
                 if (lastEl) lastEl.innerHTML = 'Welcome to Zo-Tinder! 🎉';
                 return;
             }
-
             const msgArray = Object.values(snap.val());
-
-            // Get last message by timestamp
             const last = msgArray.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)).pop();
-
             if (metaEl) metaEl.textContent = `↑ ${memberCount} member${memberCount !== 1 ? 's' : ''} · Official channel`;
             if (lastEl) lastEl.innerHTML = last
                 ? `<em>${escapeHtml(last.senderName || 'Zo')}:</em> ${escapeHtml(last.text || '')}`
                 : 'Welcome to Zo-Tinder! 🎉';
             if (timeEl) timeEl.textContent = last?.timestamp ? timeAgo(last.timestamp) : '';
-            if (badgeEl) badgeEl.style.display = 'none';
-        });
 
+            // Unread badge for official group
+            const lastRead = lastReadMap['official_global'] || 0;
+            if (last?.timestamp && last.timestamp > lastRead && badgeEl) {
+                badgeEl.style.display = '';
+                badgeEl.textContent = '●';
+            }
+        });
     } catch (err) {
         console.error('Error loading official card:', err);
         if (metaEl) metaEl.textContent = 'Official Zo-Tinder channel';
@@ -104,17 +94,10 @@ async function loadOfficialCard() {
 
 // ── LOAD USER GROUPS ─────────────────────────────
 function loadUserGroups(uid) {
-    const userGroupsRef = ref(db, `users/${uid}/groups`);
-
-    onValue(userGroupsRef, async (snap) => {
-        if (!snap.exists()) {
-            renderGroups([]);
-            return;
-        }
+    onValue(ref(db, `users/${uid}/groups`), async (snap) => {
+        if (!snap.exists()) { allGroups = []; renderGroups(); return; }
 
         const groupIds = Object.keys(snap.val()).filter(id => id !== 'official_global');
-
-        // Load hidden timestamps
         const hiddenSnap = await get(ref(db, `users/${uid}/hiddenGroups`));
         const hidden = hiddenSnap.exists() ? hiddenSnap.val() : {};
 
@@ -122,119 +105,159 @@ function loadUserGroups(uid) {
             const groupSnap = await get(ref(db, `groups/${groupId}`));
             if (!groupSnap.exists()) return null;
             const data = groupSnap.val();
-            // Skip if user hid this group AND no new messages since hiding
-            if (hidden[groupId] && (!data.lastMessageAt || data.lastMessageAt <= hidden[groupId])) {
-                return null;
-            }
-            // If new message arrived after hiding — remove from hidden list
+            if (hidden[groupId] && (!data.lastMessageAt || data.lastMessageAt <= hidden[groupId])) return null;
             if (hidden[groupId] && data.lastMessageAt && data.lastMessageAt > hidden[groupId]) {
                 set(ref(db, `users/${uid}/hiddenGroups/${groupId}`), null);
             }
-            return { id: groupId, ...data };
+            // Calculate unread count
+            const lastRead = lastReadMap[groupId] || 0;
+            const unread = data.lastMessageAt && data.lastMessageAt > lastRead ? 1 : 0;
+            return { id: groupId, ...data, unread };
         });
 
         const groups = (await Promise.all(groupPromises)).filter(Boolean);
-
-        // Sort newest message first
         groups.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
-
         allGroups = groups;
-        renderGroups(groups);
+        renderGroups();
     });
 }
 
 // ── RENDER GROUP CARDS ───────────────────────────
-function renderGroups(groups) {
+function renderGroups() {
     const container = document.getElementById('groupList');
     const emptyState = document.getElementById('emptyState');
     if (!container) return;
 
     container.innerHTML = '';
 
-    const q = document.getElementById('groupSearch')?.value.toLowerCase().trim() || '';
-
-    const filtered = groups.filter(g => {
+    const q = activeSearch.toLowerCase().trim();
+    const filtered = allGroups.filter(g => {
         const matchCat = activeCategory === 'all' || g.category === activeCategory;
-        const matchSearch = !q || g.name.toLowerCase().includes(q);
+        const matchSearch = !q || (g.name || '').toLowerCase().includes(q);
         return matchCat && matchSearch;
     });
 
-    if (filtered.length === 0) {
-        emptyState?.classList.add('show');
-    } else {
-        emptyState?.classList.remove('show');
-    }
+    emptyState?.classList.toggle('show', filtered.length === 0);
 
     filtered.forEach((group, i) => {
         const card = createGroupCard(group, i);
         container.appendChild(card);
     });
-
-    initCardEvents();
 }
 
 // ── CREATE GROUP CARD ELEMENT ────────────────────
 function createGroupCard(group, index) {
     const card = document.createElement('div');
     card.className = 'group-card';
-    card.dataset.cat       = group.category || 'other';
-    card.dataset.name      = group.name || '';
-    card.dataset.id        = group.id;
-    card.dataset.createdBy = group.createdBy || '';
+    card.dataset.cat = group.category || 'other';
+    card.dataset.name = group.name || '';
+    card.dataset.id = group.id;
     card.style.animationDelay = `${index * 0.04}s`;
 
-    const bg        = group.avatarURL ? '#1a1a1a' : categoryBg(group.category);
-    const avatarHTML = group.avatarURL
-        ? `<img src="${group.avatarURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`
-        : (group.emoji || '💬');
-    const lastMsg   = group.lastMessage || 'Say hi to the group 👋';
+    const emoji = group.emoji || '💬';
+    const bg = categoryBg(group.category);
+    const lastMsg = group.lastMessage || 'Say hi to the group 👋';
     const lastSender = group.lastSender || '';
-    const time      = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
-    const unread    = group.unread || 0;
-    const isOnline  = group.onlineCount > 0;
-    const mc        = group.memberCount || 1;
+    const time = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
+    const unread = group.unread || 0;
 
     card.innerHTML = `
         <div class="avatar-wrap">
-            <div class="avatar-emoji" style="background:${bg};">${avatarHTML}</div>
-            ${isOnline ? '<div class="online-dot"></div>' : ''}
+            <div class="avatar-emoji" style="background:${bg};">${emoji}</div>
         </div>
         <div class="group-info">
-            <div class="group-name">${escapeHtml(group.name || 'Group')}</div>
-            <span class="member-info">↑ ${mc} member${mc !== 1 ? 's' : ''}</span>
+            <div class="group-name">${escapeHtml(group.name)}</div>
+            <span class="member-info">↑ ${group.memberCount || 1} member${group.memberCount !== 1 ? 's' : ''}</span>
             <span class="last-msg">${lastSender ? `<em>${escapeHtml(lastSender)}:</em> ` : ''}${escapeHtml(lastMsg)}</span>
         </div>
         <div class="card-right">
             <span class="card-time">${time}</span>
-            ${unread > 0 ? `<div class="notif-badge">${unread > 99 ? '99+' : unread}</div>` : ''}
+            ${unread > 0 ? `<div class="notif-badge">●</div>` : ''}
         </div>
     `;
 
     card.addEventListener('click', () => {
-        location.href = `group-chat.html?id=${group.id}&name=${encodeURIComponent(group.name||'Group')}`;
+        // Mark as read when opening
+        if (currentUser) {
+            lastReadMap[group.id] = Date.now();
+            set(ref(db, `users/${currentUser.uid}/lastRead/${group.id}`), Date.now());
+        }
+        location.href = `group-chat.html?id=${group.id}&name=${encodeURIComponent(group.name)}`;
     });
 
     let pressTimer;
-    card.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => { if (typeof openContext === 'function') openContext(card); }, 600);
-    });
+    card.addEventListener('touchstart', () => { pressTimer = setTimeout(() => openContext(card), 600); });
     card.addEventListener('touchend', () => clearTimeout(pressTimer));
     card.addEventListener('touchmove', () => clearTimeout(pressTimer));
-    card.addEventListener('contextmenu', e => { e.preventDefault(); if (typeof openContext === 'function') openContext(card); });
+    card.addEventListener('contextmenu', e => { e.preventDefault(); openContext(card); });
 
     return card;
+}
+
+// ── REAL NOTIFICATIONS ──────────────────────────
+function listenNotifications(uid) {
+    // Listen to all groups for new messages
+    onValue(ref(db, `users/${uid}/groups`), (snap) => {
+        if (!snap.exists()) return;
+        const groupIds = Object.keys(snap.val());
+        groupIds.forEach(groupId => {
+            onValue(ref(db, `groups/${groupId}`), (gSnap) => {
+                if (!gSnap.exists()) return;
+                const gData = gSnap.val();
+                const lastRead = lastReadMap[groupId] || 0;
+                if (gData.lastMessageAt && gData.lastMessageAt > lastRead) {
+                    showNotifDot();
+                    addNotifItem(groupId, gData);
+                }
+            });
+        });
+    });
+}
+
+function showNotifDot() {
+    const dot = document.getElementById('notifDot');
+    if (dot) dot.style.display = '';
+}
+
+function addNotifItem(groupId, gData) {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+    // Avoid duplicates
+    if (document.getElementById('notif-' + groupId)) {
+        const existing = document.getElementById('notif-' + groupId);
+        existing.querySelector('.notif-text span').textContent =
+            `${gData.lastSender ? gData.lastSender + ': ' : ''}${gData.lastMessage || ''}`;
+        existing.querySelector('.notif-time').textContent = gData.lastMessageAt ? timeAgo(gData.lastMessageAt) : '';
+        existing.classList.add('notif-unread');
+        return;
+    }
+    const item = document.createElement('div');
+    item.className = 'notif-item notif-unread';
+    item.id = 'notif-' + groupId;
+    const emoji = gData.emoji || '💬';
+    const bg = categoryBg(gData.category);
+    item.innerHTML = `
+        <div class="notif-av" style="background:${bg};">${emoji}</div>
+        <div class="notif-text">
+            <strong>${escapeHtml(gData.name || 'Group')}</strong>
+            <span>${escapeHtml(gData.lastSender ? gData.lastSender + ': ' : '')}${escapeHtml(gData.lastMessage || 'New message')}</span>
+        </div>
+        <span class="notif-time">${gData.lastMessageAt ? timeAgo(gData.lastMessageAt) : ''}</span>
+    `;
+    item.onclick = () => {
+        closeNotif();
+        location.href = `group-chat.html?id=${groupId}&name=${encodeURIComponent(gData.name || 'Group')}`;
+    };
+    list.prepend(item);
 }
 
 // ── CREATE GROUP → SAVE TO FIREBASE ─────────────
 window.saveGroupToFirebase = async function(name, category) {
     if (!currentUser) return null;
-
     const emoji = categoryEmoji(category);
 
     const groupData = {
-        name: name,
-        category: category,
-        emoji: emoji,
+        name, category, emoji,
         createdBy: currentUser.uid,
         createdAt: Date.now(),
         lastMessageAt: Date.now(),
@@ -242,21 +265,20 @@ window.saveGroupToFirebase = async function(name, category) {
         lastSender: currentUserData?.username || 'You',
         memberCount: 1,
         isPublic: true,
-        isPrivate: false,
         onlineCount: 0,
-        members: { [currentUser.uid]: true },
-        // Creator is automatically group admin
-        roles:   { [currentUser.uid]: 'groupAdmin' },
+        members: { [currentUser.uid]: true }
     };
 
     try {
         const newGroupRef = push(ref(db, 'groups'));
         await set(newGroupRef, groupData);
-
         const groupId = newGroupRef.key;
 
         // Add to user's groups
         await set(ref(db, `users/${currentUser.uid}/groups/${groupId}`), true);
+
+        // ✅ Creator automatically becomes group admin
+        await set(ref(db, `groups/${groupId}/roles/${currentUser.uid}`), 'group_admin');
 
         return { id: groupId, ...groupData };
     } catch (err) {
@@ -265,91 +287,93 @@ window.saveGroupToFirebase = async function(name, category) {
     }
 };
 
-// ── DELETE / DISBAND GROUP ────────────────────────
-window.deleteGroupFirebase = async function(groupId) {
-    if (!currentUser || !groupId) return false;
-    try {
-        await Promise.all([
-            set(ref(db, `groups/${groupId}`), null),
-            set(ref(db, `messages/${groupId}`), null),
-            set(ref(db, `posts/${groupId}`), null),
-        ]);
-        const usersSnap = await get(ref(db, 'users'));
-        if (usersSnap.exists()) {
-            const ops = [];
-            usersSnap.forEach(child => {
-                if (child.val()?.groups?.[groupId]) {
-                    ops.push(set(ref(db, `users/${child.key}/groups/${groupId}`), null));
-                }
-            });
-            await Promise.all(ops);
-        }
-        return true;
-    } catch (err) {
-        console.error('deleteGroupFirebase error:', err);
-        return false;
-    }
-};
-
 // ── LEAVE GROUP ──────────────────────────────────
 window.leaveGroupFirebase = async function(groupId, recordLeft = false) {
     if (!currentUser || !groupId) return;
-
     try {
         const ops = [
             set(ref(db, `users/${currentUser.uid}/groups/${groupId}`), null),
             set(ref(db, `groups/${groupId}/members/${currentUser.uid}`), null),
         ];
-
         if (recordLeft) {
-            // Write to left list — blocks re-entry into this group
             ops.push(set(ref(db, `groups/${groupId}/left/${currentUser.uid}`), { at: Date.now() }));
-            // Remove any group role
             ops.push(set(ref(db, `groups/${groupId}/roles/${currentUser.uid}`), null));
         }
-
         await Promise.all(ops);
-
         const groupSnap = await get(ref(db, `groups/${groupId}`));
         if (groupSnap.exists()) {
             const count = groupSnap.val().memberCount || 1;
             await set(ref(db, `groups/${groupId}/memberCount`), Math.max(count - 1, 0));
         }
-    } catch (err) {
-        console.error('Error leaving group:', err);
+    } catch (err) { console.error('Error leaving group:', err); }
+};
+
+// ── HIDE GROUP ────────────────────────────────────
+window.hideGroupForUser = async function(groupId) {
+    if (!currentUser || !groupId) return;
+    try { await set(ref(db, `users/${currentUser.uid}/hiddenGroups/${groupId}`), Date.now()); }
+    catch(err) { console.error('hideGroupForUser error:', err); }
+};
+
+// ── MARK NOTIFICATIONS READ ───────────────────────
+window.markAllNotifsRead = async function() {
+    if (!currentUser) return;
+    const updates = {};
+    allGroups.forEach(g => { updates[g.id] = Date.now(); lastReadMap[g.id] = Date.now(); });
+    updates['official_global'] = Date.now();
+    lastReadMap['official_global'] = Date.now();
+    await update(ref(db, `users/${currentUser.uid}/lastRead`), updates);
+    // Hide all unread badges
+    document.querySelectorAll('.notif-unread').forEach(el => el.classList.remove('notif-unread'));
+    document.getElementById('officialBadge').style.display = 'none';
+    renderGroups();
+};
+
+// ── FILTER EXPOSED TO HTML ────────────────────────
+window.setActiveCategory = function(cat) {
+    activeCategory = cat;
+    renderGroups();
+};
+window.onGroupSearch = function() {
+    activeSearch = document.getElementById('groupSearch')?.value || '';
+    renderGroups();
+};
+
+// ── CONTEXT MENU EXPOSE ───────────────────────────
+window.openContext = function(card) {
+    const contextTarget = card;
+    document.getElementById('contextName').textContent = card.dataset.name || 'Group';
+    document.getElementById('contextOverlay').classList.add('show');
+    window._contextCard = card;
+};
+
+// ── LEAVE FROM CONTEXT ────────────────────────────
+window.doLeaveFromContext = async function() {
+    const card = window._contextCard;
+    if (!card) return;
+    const groupId = card.dataset.id;
+    card.style.transition = '0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(-20px)';
+    setTimeout(() => card.remove(), 300);
+    if (groupId && typeof leaveGroupFirebase === 'function') {
+        await window.leaveGroupFirebase(groupId, true);
     }
 };
 
-// ── HIDE GROUP FROM USER VIEW (reappears on new message) ─────────────────────
-window.hideGroupForUser = async function(groupId) {
-    if (!currentUser || !groupId) return;
-    try {
-        // Store hidden timestamp — group.js will skip groups hidden until last message is newer
-        await set(ref(db, `users/${currentUser.uid}/hiddenGroups/${groupId}`), Date.now());
-    } catch(err) { console.error('hideGroupForUser error:', err); }
-};
-
-// ── FILTER CATEGORY (called from HTML chips) ─────
-window.setActiveCategory = function(cat) {
-    activeCategory = cat;
-    renderGroups(allGroups);
-};
-
-// ── SEARCH (called from HTML input) ─────────────
-window.onGroupSearch = function() {
-    renderGroups(allGroups);
-};
-
-// ── OPEN OFFICIAL CHAT ───────────────────────────
-window.openOfficialChat = function() {
-    location.href = `group-chat.html?id=official_global&name=${encodeURIComponent('Zo-Tinder Official')}`;
-};
-
-// ── EXPOSE CURRENT USER FOR HTML ─────────────────
+// ── HELPERS ──────────────────────────────────────
 window.getCurrentUser = function() { return currentUser; };
 window.getCurrentUserData = function() { return currentUserData; };
 
-// ── HELPERS ──────────────────────────────────────
+// ── OPEN OFFICIAL CHAT ───────────────────────────
+window.openOfficialChat = function() {
+    if (currentUser) {
+        lastReadMap['official_global'] = Date.now();
+        set(ref(db, `users/${currentUser.uid}/lastRead/official_global`), Date.now());
+    }
+    location.href = `group-chat.html?id=official_global&name=${encodeURIComponent('Zo-Tinder Official')}`;
+};
+
 function categoryEmoji(cat) {
     const map = { dating:'❤️', gaming:'🎮', fitness:'💪', food:'🍜', vibes:'🌙', other:'✨' };
     return map[cat] || '💬';
@@ -361,12 +385,10 @@ function categoryBg(cat) {
 }
 
 function timeAgo(timestamp) {
-    const now = Date.now();
-    const diff = now - timestamp;
+    const diff = Date.now() - timestamp;
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-
     if (mins < 1) return 'Now';
     if (mins < 60) return `${mins}m`;
     if (hours < 24) return `${hours}h`;

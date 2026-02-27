@@ -695,24 +695,23 @@
         <div class="header-actions">
             <div class="h-btn" id="notifBtn" onclick="openNotif()">
                 🔔
-                <div class="notif-dot" id="notifDot"></div>
+                <div class="notif-dot" id="notifDot" style="display:none;"></div>
             </div>
-            <div class="h-btn" onclick="openSettings()">⚙️</div>
         </div>
     </div>
 
     <div class="filter-row">
-        <div class="chip active" data-cat="all" onclick="setChip(this,'all')">All</div>
-        <div class="chip" data-cat="dating" onclick="setChip(this,'dating')">❤️ Dating</div>
-        <div class="chip" data-cat="gaming" onclick="setChip(this,'gaming')">🎮 Gaming</div>
-        <div class="chip" data-cat="fitness" onclick="setChip(this,'fitness')">💪 Fitness</div>
-        <div class="chip" data-cat="food" onclick="setChip(this,'food')">🍜 Food</div>
-        <div class="chip" data-cat="vibes" onclick="setChip(this,'vibes')">🌙 Vibes</div>
+        <div class="chip active" data-cat="all" onclick="selectChip(this,'all')">All</div>
+        <div class="chip" data-cat="dating" onclick="selectChip(this,'dating')">❤️ Dating</div>
+        <div class="chip" data-cat="gaming" onclick="selectChip(this,'gaming')">🎮 Gaming</div>
+        <div class="chip" data-cat="fitness" onclick="selectChip(this,'fitness')">💪 Fitness</div>
+        <div class="chip" data-cat="food" onclick="selectChip(this,'food')">🍜 Food</div>
+        <div class="chip" data-cat="vibes" onclick="selectChip(this,'vibes')">🌙 Vibes</div>
     </div>
 
     <div class="search-box">
         <span style="opacity:0.35;">🔍</span>
-        <input type="text" id="groupSearch" placeholder="Search communities..." oninput="onGroupSearch(); document.getElementById('searchClear').classList.toggle('visible', this.value.length > 0)">
+        <input type="text" id="groupSearch" placeholder="Search communities..." oninput="handleSearch(this)">
         <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
     </div>
 </div>
@@ -770,10 +769,8 @@
         <div class="sheet-option" onclick="doOption('read')"><span class="opt-icon">✅</span>Mark as Read</div>
         <div class="sheet-divider"></div>
         <div class="sheet-option" onclick="doOption('share')"><span class="opt-icon">🔗</span>Share Invite Link</div>
-        <div id="disbandContextSection" style="display:none;">
-            <div class="sheet-divider"></div>
-            <div class="sheet-option danger" id="disbandContextBtn" onclick="doOption('disband')"><span class="opt-icon">💥</span>Disband Group</div>
-        </div>
+        <div class="sheet-divider"></div>
+        <div class="sheet-option danger" onclick="doOption('leave')"><span class="opt-icon">🚪</span>Leave Group</div>
     </div>
 </div>
 
@@ -807,54 +804,12 @@
 <div class="overlay" id="notifOverlay" onclick="closeNotif()">
     <div class="sheet" onclick="event.stopPropagation()">
         <div class="sheet-handle"></div>
-        <div class="sheet-title">Notifications</div>
-        <div class="notif-item notif-unread">
-            <div class="notif-av" style="background:#1a0a0a;">📢</div>
-            <div class="notif-text"><strong>Zo-Tinder Official</strong><span>New feature drop! Update your app 🔥</span></div>
-            <span class="notif-time">Now</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 12px;">
+            <div class="sheet-title" style="margin-bottom:0;padding-bottom:0;">Notifications</div>
+            <div onclick="markAllRead()" style="font-size:12px;color:#ff3e1d;font-weight:800;cursor:pointer;padding:4px 8px;">Mark all read</div>
         </div>
-        <div class="notif-item notif-unread">
-            <div class="notif-av" style="background:#1a1030;">🌙</div>
-            <div class="notif-text"><strong>Late Night Vibes</strong><span>Kai: anyone else can't sleep 😭</span></div>
-            <span class="notif-time">2m</span>
-        </div>
-        <div class="notif-item">
-            <div class="notif-av" style="background:#0a1f14;">💪</div>
-            <div class="notif-text"><strong>Fit &amp; Flirty</strong><span>Mia posted a new photo</span></div>
-            <span class="notif-time">15m</span>
-        </div>
-        <div class="notif-item">
-            <div class="notif-av" style="background:#1f0a14;">💔</div>
-            <div class="notif-text"><strong>The Breakup Club</strong><span>Ash: he texted again... 👀</span></div>
-            <span class="notif-time">3h</span>
-        </div>
-    </div>
-</div>
-
-<!-- ══ SETTINGS ══ -->
-<div class="overlay" id="settingsOverlay" onclick="closeSettings()">
-    <div class="sheet" onclick="event.stopPropagation()">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title">Settings</div>
-        <div class="settings-item" onclick="showToast('🔕 Coming soon!'); closeSettings()">
-            <div class="settings-left"><span class="s-icon">🔕</span><span class="s-label">Mute All Groups</span></div>
-            <span class="s-arrow">›</span>
-        </div>
-        <div class="settings-item" onclick="showToast('🎨 Coming soon!'); closeSettings()">
-            <div class="settings-left"><span class="s-icon">🎨</span><span class="s-label">Chat Theme</span></div>
-            <span class="s-arrow">›</span>
-        </div>
-        <div class="settings-item" onclick="showToast('🔒 Coming soon!'); closeSettings()">
-            <div class="settings-left"><span class="s-icon">🔒</span><span class="s-label">Privacy</span></div>
-            <span class="s-arrow">›</span>
-        </div>
-        <div class="settings-item" onclick="showToast('📦 Coming soon!'); closeSettings()">
-            <div class="settings-left"><span class="s-icon">📦</span><span class="s-label">Archived Groups</span></div>
-            <span class="s-arrow">›</span>
-        </div>
-        <div class="settings-item" onclick="showToast('🛟 Coming soon!'); closeSettings()">
-            <div class="settings-left"><span class="s-icon">🛟</span><span class="s-label">Help &amp; Support</span></div>
-            <span class="s-arrow">›</span>
+        <div id="notifList">
+            <div style="text-align:center;padding:30px 20px;color:#444;font-size:13px;">No new notifications</div>
         </div>
     </div>
 </div>
@@ -880,122 +835,54 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let activeCategory = 'all';
 let contextTarget = null;
 let selectedCat = '';
 let longPressTimer = null;
 
-// ── CARD EVENTS ──
-// Navigation is handled by group.js which includes the correct ?id= URL param
-// This only sets up long-press for context menu
-function initCardEvents() {
-    document.querySelectorAll('#groupList .group-card').forEach(card => {
-        card.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => openContext(card), 600); });
-        card.addEventListener('touchend', () => clearTimeout(longPressTimer));
-        card.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-        card.addEventListener('contextmenu', e => { e.preventDefault(); openContext(card); });
-    });
-}
-initCardEvents();
-
-// ── FILTER CHIPS ──
-document.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', function() {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
-        activeCategory = this.dataset.cat;
-        filterGroups();
-    });
-});
-
-// ── SEARCH ──
-const searchInput = document.getElementById('groupSearch');
-const searchClear = document.getElementById('searchClear');
-searchInput.addEventListener('input', function() {
-    searchClear.classList.toggle('visible', this.value.length > 0);
-    filterGroups();
-});
-function clearSearch() {
-    searchInput.value = '';
-    searchClear.classList.remove('visible');
-    filterGroups();
-}
-
-function filterGroups() {
-    const q = searchInput.value.toLowerCase().trim();
-    const cards = document.querySelectorAll('#groupList .group-card');
-    let visible = 0;
-    cards.forEach(card => {
-        const name = (card.dataset.name || '').toLowerCase();
-        const cat = card.dataset.cat || '';
-        const show = (!q || name.includes(q)) && (activeCategory === 'all' || cat === activeCategory);
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
-    });
-    document.getElementById('emptyState').classList.toggle('show', visible === 0);
-}
-
-// ── CHIP + SEARCH HELPERS ──
-function setChip(el, cat) {
+// ── CHIP FILTER ──
+function selectChip(el, cat) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     if (typeof setActiveCategory === 'function') setActiveCategory(cat);
 }
+
+// ── SEARCH ──
+function handleSearch(input) {
+    document.getElementById('searchClear').classList.toggle('visible', input.value.length > 0);
+    if (typeof onGroupSearch === 'function') onGroupSearch();
+}
 function clearSearch() {
-    document.getElementById('groupSearch').value = '';
+    const input = document.getElementById('groupSearch');
+    input.value = '';
     document.getElementById('searchClear').classList.remove('visible');
     if (typeof onGroupSearch === 'function') onGroupSearch();
 }
 
 // ── CONTEXT MENU ──
-function openContext(card) {
-    contextTarget = card;
-    document.getElementById('contextName').textContent = card.dataset.name || 'Group';
-
-    // Show Disband only for group creator or app staff
-    const user     = typeof getCurrentUser     === 'function' ? getCurrentUser() : null;
-    const userData = typeof getCurrentUserData === 'function' ? getCurrentUserData() : null;
-    const createdBy  = card.dataset.createdBy || '';
-    const appRole    = userData?.role || 'member';
-    const isStaff    = ['owner','admin','mod'].includes(appRole);
-    const canDisband = user && (user.uid === createdBy || isStaff);
-    document.getElementById('disbandContextSection').style.display = canDisband ? '' : 'none';
-
-    document.getElementById('contextOverlay').classList.add('show');
+function closeContext() {
+    document.getElementById('contextOverlay').classList.remove('show');
+    contextTarget = null;
+    window._contextCard = null;
 }
-function closeContext() { document.getElementById('contextOverlay').classList.remove('show'); contextTarget = null; }
-async function doOption(action) {
-    const savedTarget = contextTarget;
+function doOption(action) {
+    const card = window._contextCard;
     closeContext();
     if (action === 'mute')  showToast('🔇 Notifications muted');
     if (action === 'pin')   showToast('📌 Pinned to top');
-    if (action === 'share') { navigator.clipboard?.writeText(window.location.origin + '/group-chat.html?id=' + (savedTarget?.dataset.id||'')); showToast('🔗 Invite link copied!'); }
+    if (action === 'share') showToast('🔗 Invite link copied!');
     if (action === 'read') {
-        savedTarget?.querySelector('.notif-badge')?.remove();
+        card?.querySelector('.notif-badge')?.remove();
         showToast('✅ Marked as read');
     }
-    if (action === 'disband') {
-        const groupId   = savedTarget?.dataset.id;
-        const groupName = savedTarget?.dataset.name || 'this group';
-        if (!groupId) return;
-        if (!confirm(`Disband "${groupName}" permanently?
-
-All messages, posts and member data will be deleted forever.`)) return;
-        if (typeof deleteGroupFirebase === 'function') {
-            showToast('💥 Disbanding...');
-            const ok = await deleteGroupFirebase(groupId);
-            if (ok) {
-                if (savedTarget) {
-                    savedTarget.style.transition = '0.35s';
-                    savedTarget.style.opacity = '0';
-                    savedTarget.style.transform = 'scale(0.9)';
-                    setTimeout(() => savedTarget.remove(), 350);
-                }
-                showToast('💥 Group disbanded');
-            } else {
-                showToast('❌ Failed to disband');
-            }
+    if (action === 'leave') {
+        if (card) {
+            card.style.transition = '0.3s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-20px)';
+            setTimeout(() => card.remove(), 300);
         }
+        if (typeof window.doLeaveFromContext === 'function') window.doLeaveFromContext();
+        showToast('🚪 Left group');
     }
 }
 
@@ -1018,31 +905,27 @@ async function createGroup() {
     const name = document.getElementById('newGroupName').value.trim();
     if (!name)        { showToast('⚠️ Enter a group name'); return; }
     if (!selectedCat) { showToast('⚠️ Pick a category'); return; }
-
     showToast('Creating group...');
-
-    // Save to Firebase via group.js
     if (typeof saveGroupToFirebase === 'function') {
         const result = await saveGroupToFirebase(name, selectedCat);
-        if (result) {
-            closeCreate();
-            showToast(`🎉 "${name}" created!`);
-            // group.js realtime listener will auto-render the new card
-        } else {
-            showToast('❌ Failed to create group. Try again.');
-        }
+        if (result) { closeCreate(); showToast(`🎉 "${name}" created!`); }
+        else showToast('❌ Failed to create group. Try again.');
     } else {
         showToast('❌ Not connected to Firebase yet.');
     }
 }
 
 // ── NOTIFICATIONS ──
-function openNotif() { document.getElementById('notifOverlay').classList.add('show'); document.getElementById('notifDot').style.display = 'none'; }
+function openNotif() {
+    document.getElementById('notifOverlay').classList.add('show');
+    document.getElementById('notifDot').style.display = 'none';
+}
 function closeNotif() { document.getElementById('notifOverlay').classList.remove('show'); }
-
-// ── SETTINGS ──
-function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
-function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
+function markAllRead() {
+    if (typeof window.markAllNotifsRead === 'function') window.markAllNotifsRead();
+    showToast('✅ All notifications marked as read');
+    closeNotif();
+}
 
 // ── NAV ──
 function navigateTo(key) { document.getElementById('page-' + key).classList.add('open'); }
@@ -1051,6 +934,9 @@ function closePage(key) {
     document.querySelectorAll('.foot-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('foot-groups').classList.add('active');
 }
+
+// ── CARD EVENTS (called by group.js after render) ──
+function initCardEvents() {}
 
 // ── TOAST ──
 let toastTimer;
