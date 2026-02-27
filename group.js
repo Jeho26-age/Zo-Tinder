@@ -248,6 +248,9 @@ window.saveGroupToFirebase = async function(name, category) {
         onlineCount: 0,
         members: {
             [currentUser.uid]: true
+        },
+        roles: {
+            [currentUser.uid]: 'groupAdmin'
         }
     };
 

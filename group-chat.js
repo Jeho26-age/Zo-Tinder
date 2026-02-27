@@ -69,7 +69,8 @@ const ZO_STICKERS = [
 // ══ STATE ════════════════════════════════════════
 let currentUser     = null;
 let currentUserData = null;
-let currentUserRole = "member"; // owner | admin | mod | member
+let currentUserRole = "member"; // app-wide role: owner | admin | mod | member
+let currentGroupRole = "member"; // group-specific role: groupAdmin | groupMod | member
 let isReadMode      = false;
 let isPrivate       = false;
 let notifOn         = true;
@@ -123,6 +124,40 @@ onAuthStateChanged(auth, async (user) => {
                                color:white;font-weight:900;font-size:14px;cursor:pointer;">← Go Back</button>
                 </div>`;
             return;
+        }
+
+        // Check mute status
+        if (GROUP_ID !== 'official_global') {
+            const muteSnap = await get(ref(db, `groups/${GROUP_ID}/muted/${user.uid}`));
+            if (muteSnap.exists()) {
+                const muteData = muteSnap.val();
+                if (muteData.until && muteData.until > Date.now()) {
+                    // Still muted
+                    const inputArea = document.getElementById('inputArea');
+                    if (inputArea) inputArea.style.display = 'none';
+                    const readBanner = document.getElementById('readModeBanner');
+                    if (readBanner) {
+                        readBanner.textContent = `🔇 You are muted until ${new Date(muteData.until).toLocaleString()}`;
+                        readBanner.classList.add('show');
+                    }
+                } else {
+                    // Mute expired — remove it
+                    await remove(ref(db, `groups/${GROUP_ID}/muted/${user.uid}`));
+                }
+            }
+        }
+
+        // Load group-specific role
+        const groupRoleSnap = await get(ref(db, `groups/${GROUP_ID}/roles/${user.uid}`));
+        if (groupRoleSnap.exists()) {
+            currentGroupRole = groupRoleSnap.val();
+        }
+
+        // Check if user is the group creator (auto groupAdmin)
+        const groupMetaSnap = await get(ref(db, `groups/${GROUP_ID}/createdBy`));
+        if (groupMetaSnap.exists() && groupMetaSnap.val() === user.uid) {
+            currentGroupRole = 'groupAdmin';
+            await set(ref(db, `groups/${GROUP_ID}/roles/${user.uid}`), 'groupAdmin');
         }
     }
 
@@ -331,13 +366,26 @@ async function sendMsg() {
     if (!text || !currentUser) return;
     if (isReadMode && !canSendMessage()) { showToast('📢 Only admins can send messages'); return; }
 
-    const role = currentUserRole;
-    const avatarColor = roleColor(role);
+    // Check mute status
+    if (GROUP_ID !== 'official_global') {
+        const muteSnap = await get(ref(db, `groups/${GROUP_ID}/muted/${currentUser.uid}`));
+        if (muteSnap.exists() && muteSnap.val().until > Date.now()) {
+            const until = new Date(muteSnap.val().until).toLocaleString();
+            showToast(`🔇 You are muted until ${until}`);
+            return;
+        }
+    }
+
+    // Effective display role: app staff role > group role > member
+    const effectiveRole = ['owner','admin','mod'].includes(currentUserRole) 
+        ? currentUserRole 
+        : (currentGroupRole !== 'member' ? currentGroupRole : 'member');
+    const avatarColor = roleColor(effectiveRole);
 
     const msgData = {
         uid:         currentUser.uid,
         senderName:  currentUserData?.username || 'User',
-        senderRole:  role,
+        senderRole:  effectiveRole,
         avatarBg:    '#1a1030',
         avatarColor: avatarColor,
         photoURL:    currentUserData?.photoURL || '',
@@ -373,6 +421,14 @@ window.sendMsg = sendMsg;
 // ══ SEND STICKER / EMOJI ══════════════════════════
 async function sendSticker(em) {
     if (!currentUser) return;
+    if (isReadMode && !canSendMessage()) { showToast('📢 Only admins can send messages'); return; }
+    // Check mute
+    if (GROUP_ID !== 'official_global') {
+        const muteSnap = await get(ref(db, `groups/${GROUP_ID}/muted/${currentUser.uid}`));
+        if (muteSnap.exists() && muteSnap.val().until > Date.now()) {
+            showToast('🔇 You are muted'); return;
+        }
+    }
     closeStickerTray();
     const msgData = {
         uid:        currentUser.uid,
@@ -500,11 +556,18 @@ function openMsgMenu(e, el, type, key) {
     currentMsgType   = type;
     currentMsgKey    = key || null;
 
-    const canDelete = type === 'own' || canModerate();
-    const canKick   = type === 'other' && canModerate();
+    const isOwn      = type === 'own';
+    const canDel     = isOwn || canModerate();
+    const canKickOpt = !isOwn && canAdmin(); // only group admin+ can kick from message menu
+    const canPin     = canPinMsg();
 
-    document.getElementById('msgDeleteOpt').style.display = canDelete ? '' : 'none';
-    document.getElementById('msgKickOpt').style.display   = canKick   ? '' : 'none';
+    document.getElementById('msgDeleteOpt').style.display = canDel    ? '' : 'none';
+    document.getElementById('msgKickOpt').style.display   = canKickOpt ? '' : 'none';
+
+    // Show/hide pin based on permissions
+    const pinOpt = document.querySelector('.sheet-option[onclick*="pin"]');
+    if (pinOpt) pinOpt.style.display = canPin ? '' : 'none';
+
     document.getElementById('msgMenuOverlay').classList.add('show');
 }
 window.openMsgMenu = openMsgMenu;
@@ -593,6 +656,14 @@ function openSettings() {
     const leaveDivider = document.getElementById('leaveGroupDivider');
     if (leaveBtn)     leaveBtn.style.display     = isOfficial ? 'none' : '';
     if (leaveDivider) leaveDivider.style.display = isOfficial ? 'none' : '';
+
+    // Admin-only options — only show to group admin or app staff
+    const adminOpts = document.getElementById('settingsAdminSection');
+    if (adminOpts) adminOpts.style.display = canAdmin() ? '' : 'none';
+
+    // Delete group — show to group admin or app staff
+    const delBtn = document.getElementById('deleteGroupBtn');
+    if (delBtn) delBtn.style.display = (!isOfficial && canDisbandGroup()) ? '' : 'none';
 
     document.getElementById('settingsOverlay').classList.add('show');
 }
@@ -688,6 +759,36 @@ async function clearChat() {
 }
 window.clearChat = clearChat;
 
+// ══ DELETE GROUP ══════════════════════════════════
+async function deleteGroup() {
+    if (!canDisbandGroup()) { showToast('⛔ Group Admin only'); return; }
+    if (GROUP_ID === 'official_global') { showToast('⛔ Cannot delete official group'); return; }
+    closeSettings();
+    const confirmed = confirm('Delete this group permanently? All messages and data will be lost. This cannot be undone.');
+    if (!confirmed) return;
+    try {
+        await Promise.all([
+            remove(ref(db, `groups/${GROUP_ID}`)),
+            remove(ref(db, `messages/${GROUP_ID}`)),
+            remove(ref(db, `posts/${GROUP_ID}`)),
+        ]);
+        // Remove from all members' group lists
+        const usersSnap = await get(ref(db, 'users'));
+        if (usersSnap.exists()) {
+            const ops = [];
+            usersSnap.forEach(child => {
+                if (child.val()?.groups?.[GROUP_ID]) {
+                    ops.push(remove(ref(db, `users/${child.key}/groups/${GROUP_ID}`)));
+                }
+            });
+            await Promise.all(ops);
+        }
+        showToast('🗑️ Group deleted');
+        setTimeout(() => { window.location.href = 'group.html'; }, 800);
+    } catch(e) { showToast('❌ Failed to delete group'); }
+}
+window.deleteGroup = deleteGroup;
+
 // ══ LEAVE GROUP (member initiated) ══════════════
 async function leaveGroup() {
     if (GROUP_ID === 'official_global') { showToast('⛔ You cannot leave the official group'); return; }
@@ -733,18 +834,19 @@ function selectRoleOpt(opt) {
 window.selectRoleOpt = selectRoleOpt;
 
 async function confirmAssignRole() {
-    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
     const name = document.getElementById('roleTargetName').value.trim();
     if (!name) { showToast('⚠️ Enter a member name'); return; }
 
-    // Find user by username
     const uid = await findUidByUsername(name);
     if (!uid) { showToast('❌ User not found'); return; }
 
-    const newRole = selectedRoleOpt === 'mod' ? 'mod' : 'member';
-    await set(ref(db, `users/${uid}/role`), newRole);
+    // Roles stored per-group
+    const newRole = selectedRoleOpt === 'mod' ? 'groupMod' : 'member';
+    await set(ref(db, `groups/${GROUP_ID}/roles/${uid}`), newRole);
     closeAssignRole();
-    showToast(newRole === 'mod' ? `🛡️ ${name} is now a Moderator!` : `👤 ${name} role removed`);
+    showToast(newRole === 'groupMod' ? `🔰 ${name} is now a Group Moderator!` : `👤 ${name} role removed`);
+    loadMembers();
 }
 window.confirmAssignRole = confirmAssignRole;
 
@@ -769,43 +871,50 @@ function selectAdminOpt(opt) {
 window.selectAdminOpt = selectAdminOpt;
 
 async function confirmAdminAction() {
-    if (!isOwner()) { showToast('⛔ Owner only'); return; }
+    if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
     const name = document.getElementById('adminTargetName').value.trim();
     if (!name) { showToast('⚠️ Enter a member name'); return; }
 
     const uid = await findUidByUsername(name);
     if (!uid) { showToast('❌ User not found'); return; }
+    if (uid === OWNER_UID) { showToast('⛔ Cannot change App Owner'); return; }
 
-    // Protect owner account
-    const targetSnap = await get(ref(db, `users/${uid}/role`));
-    if (targetSnap.val() === 'owner') { showToast('⛔ Cannot change owner role'); return; }
-
-    const newRole = selectedAdminOpt === 'promote' ? 'admin' : 'member';
-    await set(ref(db, `users/${uid}/role`), newRole);
+    const newRole = selectedAdminOpt === 'promote' ? 'groupAdmin' : 'member';
+    await set(ref(db, `groups/${GROUP_ID}/roles/${uid}`), newRole);
     closePromoteAdmin();
-    showToast(newRole === 'admin' ? `⚙️ ${name} is now an Admin!` : `👤 ${name} removed as Admin`);
+    showToast(newRole === 'groupAdmin' ? `🏠 ${name} is now Group Admin!` : `👤 ${name} removed as Group Admin`);
+    loadMembers();
 }
 window.confirmAdminAction = confirmAdminAction;
 
 // ══ MEMBER OPTIONS ════════════════════════════════
-function openMemberOptions(e, name, role) {
+function openMemberOptions(e, name, appRole, groupRole, uid) {
     e.stopPropagation();
-    currentMemberTarget = { name, role };
+    currentMemberTarget = { name, appRole: appRole||'member', groupRole: groupRole||'member', uid: uid||null };
 
     document.getElementById('memberOptName').textContent = name;
 
-    // Show/hide options based on target role and current user role
-    const isMod    = role === 'mod';
-    const isAdminR = role === 'admin';
+    const targetIsAppStaff = ['owner','admin','mod'].includes(appRole);
+    const targetIsGroupAdmin = groupRole === 'groupAdmin';
+    const targetIsGroupMod   = groupRole === 'groupMod';
+    const targetIsSelf       = uid === currentUser?.uid;
 
-    document.getElementById('optMakeAdmin').style.display   = (!isAdminR && canAdmin()) ? '' : 'none';
-    document.getElementById('optRemoveAdmin').style.display = (isAdminR && isOwner())   ? '' : 'none';
-    document.getElementById('optAssignMod').style.display   = (!isMod && canAdmin())    ? '' : 'none';
-    document.getElementById('optRemoveMod').style.display   = (isMod && canAdmin())     ? '' : 'none';
+    // Cannot manage app staff or self
+    const canManage = !targetIsAppStaff && !targetIsSelf && (uid !== OWNER_UID);
 
-    // Only show moderation section to mods and above
-    document.getElementById('modActionsSection').style.display = canModerateGroup() ? '' : 'none';
-    document.getElementById('adminActionsSection').style.display = canManageGroup() ? '' : 'none';
+    // Admin actions section (groupAdmin or appStaff can see)
+    document.getElementById('adminActionsSection').style.display = canAdmin() && canManage ? '' : 'none';
+
+    // Make/Remove group admin — only groupAdmin or appStaff
+    document.getElementById('optMakeAdmin').style.display   = (!targetIsGroupAdmin && canAdmin() && canManage) ? '' : 'none';
+    document.getElementById('optRemoveAdmin').style.display = (targetIsGroupAdmin && canAdmin() && canManage)  ? '' : 'none';
+
+    // Make/Remove group mod — groupAdmin or appStaff, target must not already be groupAdmin
+    document.getElementById('optAssignMod').style.display   = (!targetIsGroupMod && !targetIsGroupAdmin && canAdmin() && canManage) ? '' : 'none';
+    document.getElementById('optRemoveMod').style.display   = (targetIsGroupMod && canAdmin() && canManage)  ? '' : 'none';
+
+    // Moderation section (groupMod+ or appStaff can see)
+    document.getElementById('modActionsSection').style.display = (canModerate() && canManage) ? '' : 'none';
 
     document.getElementById('memberOptOverlay').classList.add('show');
 }
@@ -816,48 +925,80 @@ window.closeMemberOpts = closeMemberOpts;
 
 async function memberAction(action) {
     closeMemberOpts();
-    const name = currentMemberTarget?.name || 'User';
-    const uid  = await findUidByUsername(name);
+    const name     = currentMemberTarget?.name || 'User';
+    const targetUid = currentMemberTarget?.uid || await findUidByUsername(name);
 
     if (action === 'profile') { window.location.href = 'user-view.html'; return; }
 
+    // Protect app owner from any action
+    if (targetUid === OWNER_UID && action !== 'profile') { showToast('⛔ Cannot act on App Owner'); return; }
+
     if (action === 'makeAdmin') {
-        if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'admin');
-        showToast(`⚙️ ${name} is now Admin!`);
+        // groupAdmin can promote to groupMod/groupAdmin; appStaff also
+        if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
+        if (targetUid) await set(ref(db, `groups/${GROUP_ID}/roles/${targetUid}`), 'groupAdmin');
+        showToast(`🏠 ${name} is now Group Admin!`);
+        loadMembers();
     }
     if (action === 'removeAdmin') {
-        if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
-        showToast(`👤 ${name} removed as Admin`);
+        if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
+        if (targetUid) await set(ref(db, `groups/${GROUP_ID}/roles/${targetUid}`), 'member');
+        showToast(`👤 ${name} removed as Group Admin`);
+        loadMembers();
     }
     if (action === 'assignMod') {
-        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'mod');
-        showToast(`🛡️ ${name} is now a Moderator!`);
+        if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
+        if (targetUid) await set(ref(db, `groups/${GROUP_ID}/roles/${targetUid}`), 'groupMod');
+        showToast(`🔰 ${name} is now a Group Moderator!`);
+        loadMembers();
     }
     if (action === 'removeMod') {
-        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
-        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
+        if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
+        // Group mod cannot lift mute done by group admin — and cannot remove groupAdmin mods
+        if (targetUid) await set(ref(db, `groups/${GROUP_ID}/roles/${targetUid}`), 'member');
         showToast(`👤 ${name} role removed`);
+        loadMembers();
     }
-    if (action === 'mute')   { showToast(`🔇 ${name} muted`); }
-    if (action === 'warn')   { showToast(`⚠️ Warning sent to ${name}`); }
+    if (action === 'mute') {
+        openMuteMember();
+        return;
+    }
+    if (action === 'unmute') {
+        if (!canModerate()) { showToast('⛔ Moderators only'); return; }
+        if (targetUid) {
+            const muteSnap = await get(ref(db, `groups/${GROUP_ID}/muted/${targetUid}`));
+            if (muteSnap.exists()) {
+                const muteData = muteSnap.val();
+                // Group mod cannot lift mute done by group admin (or app staff)
+                const mutedBySnap = await get(ref(db, `groups/${GROUP_ID}/roles/${muteData.by}`));
+                const mutedByRole = mutedBySnap.exists() ? mutedBySnap.val() : 'member';
+                if (currentGroupRole === 'groupMod' && !isAppStaff()) {
+                    if (mutedByRole === 'groupAdmin' || ['owner','admin','mod'].includes(muteData.byAppRole || '')) {
+                        showToast('⛔ Cannot lift mute set by Admin'); return;
+                    }
+                }
+            }
+            await remove(ref(db, `groups/${GROUP_ID}/muted/${targetUid}`));
+            showToast(`🔊 ${name} unmuted`);
+        }
+        return;
+    }
+    if (action === 'warn')   { showToast(`⚠️ Warning sent to ${name}`); return; }
     if (action === 'kick') {
-        if (!canModerateGroup()) { showToast('⛔ Mods only'); return; }
-        if (!uid) { showToast('❌ User not found'); return; }
-        // App owner cannot be kicked
-        if (uid === OWNER_UID) { showToast('⛔ Cannot kick app owner'); return; }
+        if (!canAdmin()) { showToast('⛔ Group Admin only'); return; }
+        if (!targetUid) { showToast('❌ User not found'); return; }
+        if (targetUid === OWNER_UID) { showToast('⛔ Cannot kick App Owner'); return; }
+        // Check if target is app staff — group admin cannot kick app staff
+        const targetAppRole = currentMemberTarget?.appRole || 'member';
+        if (['owner','admin','mod'].includes(targetAppRole) && !isAppStaff()) {
+            showToast('⛔ Cannot kick App Staff'); return;
+        }
         try {
             await Promise.all([
-                // Add to kicked list (blocks re-entry)
-                set(ref(db, `groups/${GROUP_ID}/kicked/${uid}`), { by: currentUser.uid, at: Date.now() }),
-                // Remove from user's group list
-                remove(ref(db, `users/${uid}/groups/${GROUP_ID}`)),
-                // Remove from group members
-                remove(ref(db, `groups/${GROUP_ID}/members/${uid}`)),
-                // Remove group-level role if any
-                remove(ref(db, `groups/${GROUP_ID}/roles/${uid}`)),
+                set(ref(db, `groups/${GROUP_ID}/kicked/${targetUid}`), { by: currentUser.uid, at: Date.now() }),
+                remove(ref(db, `users/${targetUid}/groups/${GROUP_ID}`)),
+                remove(ref(db, `groups/${GROUP_ID}/members/${targetUid}`)),
+                remove(ref(db, `groups/${GROUP_ID}/roles/${targetUid}`)),
             ]);
             showToast(`🚫 ${name} removed from group`);
             loadMembers();
@@ -867,7 +1008,64 @@ async function memberAction(action) {
 }
 window.memberAction = memberAction;
 
-// ══ TEMP BAN ══════════════════════════════════════
+// ══ MUTE MEMBER ═══════════════════════════════════
+let muteDurations = [
+  { label:'5 min', ms: 5*60*1000 },
+  { label:'1 Hour', ms: 60*60*1000 },
+  { label:'6 Hours', ms: 6*60*60*1000 },
+  { label:'1 Day', ms: 24*60*60*1000 },
+  { label:'3 Days', ms: 3*24*60*60*1000 },
+  { label:'7 Days', ms: 7*24*60*60*1000 },
+];
+let selectedMuteDur = 60*60*1000; // 1 hour default
+
+function openMuteMember() {
+    if (!canModerate()) { showToast('⛔ Moderators only'); return; }
+    const name = currentMemberTarget?.name || 'User';
+    document.getElementById('muteTargetName').textContent = name;
+    // Reset selection
+    document.querySelectorAll('.mute-dur-btn').forEach((b,i) => b.classList.toggle('selected', i===1));
+    selectedMuteDur = 60*60*1000;
+    document.getElementById('muteMemberOverlay').classList.add('show');
+}
+window.openMuteMember = openMuteMember;
+
+function closeMuteMember(e) {
+    if (!e || e.target.id === 'muteMemberOverlay') document.getElementById('muteMemberOverlay').classList.remove('show');
+}
+window.closeMuteMember = closeMuteMember;
+
+function selectMuteDur(btn, ms) {
+    document.querySelectorAll('.mute-dur-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMuteDur = ms;
+}
+window.selectMuteDur = selectMuteDur;
+
+async function confirmMuteMember() {
+    if (!canModerate()) { showToast('⛔ Moderators only'); return; }
+    const name = currentMemberTarget?.name || 'User';
+    const targetUid = currentMemberTarget?.uid || await findUidByUsername(name);
+    if (!targetUid) { showToast('❌ User not found'); return; }
+
+    const targetAppRole = currentMemberTarget?.appRole || 'member';
+    if (['owner','admin','mod'].includes(targetAppRole) && !isAppStaff()) {
+        showToast('⛔ Cannot mute App Staff'); return;
+    }
+
+    const until = Date.now() + selectedMuteDur;
+    await set(ref(db, `groups/${GROUP_ID}/muted/${targetUid}`), {
+        until,
+        by: currentUser.uid,
+        byAppRole: currentUserRole,
+        byGroupRole: currentGroupRole,
+        at: Date.now()
+    });
+    document.getElementById('muteMemberOverlay').classList.remove('show');
+    const dur = muteDurations.find(d => d.ms === selectedMuteDur)?.label || 'some time';
+    showToast(`🔇 ${name} muted for ${dur}`);
+}
+window.confirmMuteMember = confirmMuteMember;
 function openTempBan() {
     closeMemberOpts();
     document.getElementById('banTargetName').textContent = currentMemberTarget?.name || 'this user';
@@ -896,7 +1094,13 @@ async function confirmTempBan() {
     if (!canModerate()) { showToast('⛔ Moderators only'); return; }
     const name   = currentMemberTarget?.name || 'User';
     const reason = document.getElementById('banReason').value.trim();
-    const uid    = await findUidByUsername(name);
+    const uid    = currentMemberTarget?.uid || await findUidByUsername(name);
+
+    // Group mods/admins can temp-mute in group but app-level bans require app staff
+    if (!isAppStaff()) {
+        showToast('⛔ App Staff only for temp ban. Use Mute instead.');
+        closeTempBan(); return;
+    }
 
     const durMap = { '1h':3600000, '6h':21600000, '1d':86400000, '3d':259200000, '7d':604800000 };
     const banUntil = Date.now() + (durMap[selectedBanDur] || 3600000);
@@ -1204,23 +1408,54 @@ function buildWaveform(id) {
 }
 
 // ══ ROLE HELPERS ══════════════════════════════════
+// App-wide staff: bypass everything
+function isAppStaff()   { return ['owner','admin','mod'].includes(currentUserRole); }
 function isOwner()      { return currentUserRole === 'owner'; }
-function canAdmin()     { return ['owner','admin'].includes(currentUserRole); }
-function canModerate()  { return ['owner','admin','mod'].includes(currentUserRole); }
-function canManageGroup()   { return canAdmin() || currentGroupRole === 'admin'; }
-function canModerateGroup() { return canModerate() || ['admin','mod'].includes(currentGroupRole); }
-function canSendMessage()   { return !isReadMode || canAdmin() || currentGroupRole === 'admin'; }
+function isAppAdmin()   { return ['owner','admin'].includes(currentUserRole); }
+function isAppMod()     { return currentUserRole === 'mod'; }
+
+// Group-level checks (also passed by app staff)
+function isGroupAdmin() { return currentGroupRole === 'groupAdmin' || isAppStaff(); }
+function isGroupMod()   { return ['groupAdmin','groupMod'].includes(currentGroupRole) || isAppStaff(); }
+
+// canAdmin = can perform group admin actions (group admin OR app staff)
+function canAdmin()     { return isGroupAdmin(); }
+// canModerate = can moderate the group (group mod+ OR app staff)
+function canModerate()  { return isGroupMod(); }
+// Legacy aliases
+function canManageGroup()   { return canAdmin(); }
+function canModerateGroup() { return canModerate(); }
+
+// Can send message: always allowed unless read mode AND not admin/mod/app staff
+function canSendMessage() {
+    if (!isReadMode) return true;
+    return isGroupAdmin() || isAppStaff();
+}
+
+// Can delete messages: own messages always; others' messages require moderation power
+function canDeleteMsg(isOwn) { return isOwn || canModerate(); }
+
+// Can pin messages: group mod+ or app staff
+function canPinMsg() { return canModerate(); }
+
+// Can kick: group admin+ or app staff
+function canKick() { return canAdmin(); }
+
+// Can disband group: group admin, app staff
+function canDisbandGroup() { return isGroupAdmin() || isAppStaff(); }
 
 function roleColor(role) {
-    const map = { owner:'#ffd700', admin:'#ff3e1d', mod:'#a78bfa', member:'#a78bfa' };
+    const map = { owner:'#ffd700', admin:'#ff3e1d', mod:'#a78bfa', groupAdmin:'#ff9500', groupMod:'#7bc8f8', member:'#a78bfa' };
     return map[role] || '#a78bfa';
 }
 
 function getRoleBadgeHTML(role, large = false) {
     const size = large ? 'font-size:11px;padding:4px 10px;' : '';
-    if (role === 'owner') return `<span class="sender-role-badge owner" style="${size}">👑 Owner</span>`;
-    if (role === 'admin') return `<span class="sender-role-badge admin" style="${size}">⚙️ Admin</span>`;
-    if (role === 'mod')   return `<span class="sender-role-badge mod" style="${size}">🛡️ Mod</span>`;
+    if (role === 'owner')      return `<span class="sender-role-badge owner" style="${size}">👑 Owner</span>`;
+    if (role === 'admin')      return `<span class="sender-role-badge admin" style="${size}">⚙️ App Admin</span>`;
+    if (role === 'mod')        return `<span class="sender-role-badge mod" style="${size}">🛡️ App Mod</span>`;
+    if (role === 'groupAdmin') return `<span class="sender-role-badge admin" style="background:rgba(255,149,0,0.15);color:#ff9500;${size}">🏠 Admin</span>`;
+    if (role === 'groupMod')   return `<span class="sender-role-badge mod" style="background:rgba(123,200,248,0.15);color:#7bc8f8;${size}">🔰 Mod</span>`;
     return '';
 }
 
@@ -1273,18 +1508,40 @@ async function loadMembers() {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#444;font-size:13px;">Loading members...</div>';
 
     try {
-        const snap = await get(ref(db, 'users'));
-        if (!snap.exists()) { list.innerHTML = ''; return; }
+        const [usersSnap, groupRolesSnap, kickedSnap] = await Promise.all([
+            get(ref(db, 'users')),
+            get(ref(db, `groups/${GROUP_ID}/roles`)),
+            get(ref(db, `groups/${GROUP_ID}/kicked`))
+        ]);
 
-        const buckets = { owner: [], admin: [], mod: [], member: [] };
+        if (!usersSnap.exists()) { list.innerHTML = ''; return; }
+
+        const groupRoles = groupRolesSnap.exists() ? groupRolesSnap.val() : {};
+        const kicked     = kickedSnap.exists() ? kickedSnap.val() : {};
+
+        // Determine buckets: owner (app), admin (app), mod (app), groupAdmin, groupMod, member
+        const buckets = { owner:[], appAdmin:[], appMod:[], groupAdmin:[], groupMod:[], member:[] };
         let onlineCount = 0;
 
-        snap.forEach(child => {
+        usersSnap.forEach(child => {
             const u = child.val();
+            const uid = child.key;
             if (!u?.groups?.[GROUP_ID]) return; // not in this group
-            const role = (child.key === OWNER_UID) ? 'owner' : (u.role || 'member');
+            if (kicked[uid]) return; // kicked — skip
+            const appRole   = (uid === OWNER_UID) ? 'owner' : (u.role || 'member');
+            const groupRole = groupRoles[uid] || 'member';
             if (u.isOnline) onlineCount++;
-            buckets[role]?.push({ uid: child.key, ...u, role });
+
+            // Determine display bucket
+            let bucket;
+            if (appRole === 'owner')  bucket = 'owner';
+            else if (appRole === 'admin') bucket = 'appAdmin';
+            else if (appRole === 'mod')   bucket = 'appMod';
+            else if (groupRole === 'groupAdmin') bucket = 'groupAdmin';
+            else if (groupRole === 'groupMod')   bucket = 'groupMod';
+            else bucket = 'member';
+
+            buckets[bucket].push({ uid, ...u, appRole, groupRole });
         });
 
         // Update online count
@@ -1294,10 +1551,12 @@ async function loadMembers() {
         list.innerHTML = '';
 
         const sectionDefs = [
-            { key: 'owner', label: '👑 Owner' },
-            { key: 'admin', label: '⚙️ Admins' },
-            { key: 'mod',   label: '🛡️ Moderators' },
-            { key: 'member',label: '👤 Members' },
+            { key:'owner',      label:'👑 App Owner' },
+            { key:'appAdmin',   label:'⚙️ App Admins' },
+            { key:'appMod',     label:'🛡️ App Moderators' },
+            { key:'groupAdmin', label:'🏠 Group Admin' },
+            { key:'groupMod',   label:'🔰 Group Moderators' },
+            { key:'member',     label:'👤 Members' },
         ];
 
         sectionDefs.forEach(({ key, label }) => {
@@ -1310,15 +1569,21 @@ async function loadMembers() {
             list.appendChild(sectionLabel);
 
             buckets[key].forEach(u => {
-                const initial   = (u.username || '?')[0].toUpperCase();
-                const roleClass = { owner:'role-owner', admin:'role-admin', mod:'role-mod', member:'' }[u.role] || '';
-                const roleBadge = u.role !== 'member'
-                    ? `<span class="member-role ${roleClass}">${getRoleBadgeHTML(u.role)}</span>` : '';
+                const initial = (u.username || '?')[0].toUpperCase();
+                // Display role badge: app role takes priority
+                const displayRole = u.appRole !== 'member' ? u.appRole : u.groupRole;
+                const roleClass = { owner:'role-owner', admin:'role-admin', mod:'role-mod', groupAdmin:'role-admin', groupMod:'role-mod', member:'' }[displayRole] || '';
+                const roleBadge = displayRole !== 'member'
+                    ? `<span class="member-role ${roleClass}">${getRoleBadgeHTML(displayRole)}</span>` : '';
                 const onlineDot = u.isOnline ? '<div class="member-online-dot"></div>' : '';
                 const isOwnerRow = u.uid === OWNER_UID;
 
                 const row = document.createElement('div');
                 row.className = 'member-row';
+                row.dataset.uid = u.uid;
+                row.dataset.name = u.username || 'User';
+                row.dataset.appRole = u.appRole;
+                row.dataset.groupRole = u.groupRole;
                 row.innerHTML = `
                     <div class="member-av" style="background:${isOwnerRow ? 'linear-gradient(135deg,var(--accent),var(--accent2))' : '#1a1030'};color:#fff;">
                         ${u.photoURL ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : initial}
@@ -1331,10 +1596,10 @@ async function loadMembers() {
                     <div class="member-more" id="more-${u.uid}">⋯</div>
                 `;
                 row.querySelector('.member-av').onclick = () =>
-                    showUserProfile(u.username, u.age, u.khaw, initial, '#1a1030', u.role, u.photoURL || '');
+                    showUserProfile(u.username, u.age, u.khaw, initial, '#1a1030', displayRole, u.photoURL || '');
                 row.querySelector(`#more-${u.uid}`).onclick = (e) => {
                     e.stopPropagation();
-                    if (u.uid !== OWNER_UID) openMemberOptions(e, u.username, u.role);
+                    openMemberOptions(e, u.username, u.appRole, u.groupRole, u.uid);
                 };
                 list.appendChild(row);
             });

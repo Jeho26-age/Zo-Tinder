@@ -384,6 +384,11 @@ function showRoleMenuItems(viewerUID, viewerRank, targetRank, targetData) {
 
     const isTempBanned = targetData.tempBan && targetData.tempBan.until && targetData.tempBan.until > Date.now();
 
+    // ── Hide block button if target is staff ──────────────────────────────
+    if (targetRank >= ROLE_RANK.mod) {
+        document.getElementById('menuBlock')?.style.setProperty('display', 'none');
+    }
+
     if (viewerRank >= ROLE_RANK.mod) {
         document.querySelectorAll('.role-mod').forEach(el => el.style.display = 'block');
     }
