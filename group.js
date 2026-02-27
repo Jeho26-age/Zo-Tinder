@@ -1,6 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getDatabase, ref, get, set, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, get, set, push, remove, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+// ── CLOUDINARY ───────────────────────────────────
+const CLOUDINARY_CLOUD  = "duj2rx73z";
+const CLOUDINARY_PRESET = "Zo-Tinder";
+const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
 
 // ── FIREBASE CONFIG ──────────────────────────────
 const firebaseConfig = {
@@ -184,22 +189,27 @@ function renderGroups(groups) {
 function createGroupCard(group, index) {
     const card = document.createElement('div');
     card.className = 'group-card';
-    card.dataset.cat = group.category || 'other';
-    card.dataset.name = group.name;
-    card.dataset.id = group.id;
+    card.dataset.cat     = group.category || 'other';
+    card.dataset.name    = group.name;
+    card.dataset.id      = group.id;
+    card.dataset.creator = group.createdBy || '';
     card.style.animationDelay = `${index * 0.04}s`;
 
     const emoji = group.emoji || '💬';
-    const bg = categoryBg(group.category);
+    const bg    = categoryBg(group.category);
     const lastMsg = group.lastMessage || 'Say hi to the group 👋';
     const lastSender = group.lastSender || '';
     const time = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
     const unread = group.unread || 0;
     const isOnline = group.onlineCount > 0;
 
+    const avatarHTML = group.avatarURL
+        ? `<img src="${group.avatarURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`
+        : emoji;
+
     card.innerHTML = `
         <div class="avatar-wrap">
-            <div class="avatar-emoji" style="background:${bg};">${emoji}</div>
+            <div class="avatar-emoji" style="background:${bg};">${avatarHTML}</div>
             ${isOnline ? '<div class="online-dot"></div>' : ''}
         </div>
         <div class="group-info">
@@ -236,10 +246,26 @@ function createGroupCard(group, index) {
 }
 
 // ── CREATE GROUP → SAVE TO FIREBASE ─────────────
-window.saveGroupToFirebase = async function(name, category) {
+window.saveGroupToFirebase = async function(name, category, avatarFile = null) {
     if (!currentUser) return null;
 
     const emoji = categoryEmoji(category);
+
+    // Upload avatar to Cloudinary if provided
+    let avatarURL = null;
+    if (avatarFile) {
+        try {
+            const fd = new FormData();
+            fd.append('file', avatarFile);
+            fd.append('upload_preset', CLOUDINARY_PRESET);
+            fd.append('folder', 'group-avatars');
+            const res  = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.secure_url) avatarURL = data.secure_url;
+        } catch(e) {
+            console.error('avatar upload error:', e);
+        }
+    }
 
     const groupData = {
         name: name,
@@ -253,6 +279,7 @@ window.saveGroupToFirebase = async function(name, category) {
         memberCount: 1,
         isPublic: true,
         onlineCount: 0,
+        ...(avatarURL ? { avatarURL } : {}),
         members: {
             [currentUser.uid]: true
         },
@@ -304,6 +331,21 @@ window.leaveGroupFirebase = async function(groupId, recordLeft = false) {
     } catch (err) {
         console.error('Error leaving group:', err);
     }
+};
+
+// ── DELETE GROUP (creator only) ───────────────────────────────────────────
+window.deleteGroupFirebase = async function(groupId) {
+    if (!currentUser || !groupId) return;
+    // Security check — only creator can delete
+    try {
+        const snap = await get(ref(db, `groups/${groupId}/createdBy`));
+        if (snap.val() !== currentUser.uid) return; // not the creator
+        await Promise.all([
+            remove(ref(db, `groups/${groupId}`)),
+            remove(ref(db, `messages/${groupId}`)),
+            remove(ref(db, `posts/${groupId}`)),
+        ]);
+    } catch(err) { console.error('deleteGroup error:', err); }
 };
 
 // ── HIDE GROUP FROM USER VIEW (reappears on new message) ─────────────────────

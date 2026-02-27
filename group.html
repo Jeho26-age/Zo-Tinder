@@ -697,7 +697,6 @@
                 🔔
                 <div class="notif-dot" id="notifDot"></div>
             </div>
-            <div class="h-btn" onclick="openSettings()">⚙️</div>
         </div>
     </div>
 
@@ -753,11 +752,11 @@
 
 <!-- FOOTER -->
 <footer class="footer">
-    <button class="foot-btn" id="foot-home" onclick="navigateTo('home')">🔥<div class="foot-dot"></div></button>
-    <button class="foot-btn" id="foot-store" onclick="navigateTo('store')">🛍️<div class="foot-dot"></div></button>
-    <button class="foot-btn" id="foot-battle" onclick="navigateTo('battle')">⚔️<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-home"    onclick="location.href='home.html'">🔥<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-store"   onclick="location.href='store.html'">🛍️<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-battle"  onclick="location.href='battle.html'">⚔️<div class="foot-dot"></div></button>
     <button class="foot-btn active" id="foot-groups">🪩<div class="foot-dot"></div></button>
-    <button class="foot-btn" id="foot-profile" onclick="navigateTo('profile')">🪪<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-profile" onclick="location.href='profile.html'">🪪<div class="foot-dot"></div></button>
 </footer>
 
 <!-- ══ CONTEXT MENU ══ -->
@@ -772,6 +771,7 @@
         <div class="sheet-option" onclick="doOption('share')"><span class="opt-icon">🔗</span>Share Invite Link</div>
         <div class="sheet-divider"></div>
         <div class="sheet-option danger" onclick="doOption('leave')"><span class="opt-icon">🚪</span>Leave Group</div>
+        <div class="sheet-option danger" id="deleteGroupOpt" style="display:none;" onclick="doOption('delete')"><span class="opt-icon">🗑️</span>Delete Group</div>
     </div>
 </div>
 
@@ -779,6 +779,21 @@
 <div class="overlay center" id="createOverlay" onclick="closeCreate(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-title">Create Group</div>
+
+        <!-- Avatar upload -->
+        <div style="display:flex;justify-content:center;margin-bottom:18px;">
+            <div id="groupAvatarPreview" onclick="document.getElementById('groupAvatarInput').click()" style="
+                width:72px;height:72px;border-radius:18px;
+                background:#1a1a2e;border:2px dashed rgba(255,255,255,0.12);
+                display:flex;flex-direction:column;align-items:center;justify-content:center;
+                cursor:pointer;font-size:1.6rem;gap:2px;transition:border-color 0.2s;
+            ">
+                <span id="groupAvatarEmoji">📷</span>
+                <span style="font-size:9px;color:#444;font-weight:800;letter-spacing:0.5px;">AVATAR</span>
+            </div>
+            <input type="file" id="groupAvatarInput" accept="image/*" style="display:none;" onchange="previewGroupAvatar(this)">
+        </div>
+
         <div class="modal-field">
             <label class="modal-label">Group Name</label>
             <input class="modal-input" id="newGroupName" type="text" placeholder="e.g. Night Owls 🦉" maxlength="40">
@@ -900,6 +915,12 @@ function setChip(el, cat) {
 function openContext(card) {
     contextTarget = card;
     document.getElementById('contextName').textContent = card.dataset.name || 'Group';
+    // Show delete only if current user is the creator
+    const deleteOpt = document.getElementById('deleteGroupOpt');
+    if (deleteOpt) {
+        const uid = typeof getCurrentUser === 'function' ? getCurrentUser()?.uid : null;
+        deleteOpt.style.display = (uid && card.dataset.creator === uid) ? '' : 'none';
+    }
     document.getElementById('contextOverlay').classList.add('show');
 }
 function closeContext() {
@@ -918,11 +939,7 @@ function doOption(action) {
     if (action === 'leave') {
         const groupId = contextTarget?.dataset.id;
         if (!groupId) return;
-        // Use hideGroupForUser — group reappears on new message
-        // Does NOT permanently remove user or block re-entry
-        if (typeof hideGroupForUser === 'function') {
-            hideGroupForUser(groupId);
-        }
+        if (typeof hideGroupForUser === 'function') hideGroupForUser(groupId);
         if (contextTarget) {
             contextTarget.style.transition = '0.3s';
             contextTarget.style.opacity = '0';
@@ -930,6 +947,21 @@ function doOption(action) {
             setTimeout(() => contextTarget.remove(), 300);
         }
         showToast('🚪 Group hidden');
+    }
+    if (action === 'delete') {
+        const groupId = contextTarget?.dataset.id;
+        if (!groupId) return;
+        if (!confirm('Delete this group permanently? This cannot be undone.')) return;
+        if (typeof deleteGroupFirebase === 'function') {
+            deleteGroupFirebase(groupId);
+        }
+        if (contextTarget) {
+            contextTarget.style.transition = '0.3s';
+            contextTarget.style.opacity = '0';
+            contextTarget.style.transform = 'translateX(-20px)';
+            setTimeout(() => contextTarget.remove(), 300);
+        }
+        showToast('🗑️ Group deleted');
     }
 }
 
@@ -948,16 +980,33 @@ function selectCat(btn) {
     btn.classList.add('selected');
     selectedCat = btn.dataset.val;
 }
+// Avatar preview
+let groupAvatarFile = null;
+function previewGroupAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+    groupAvatarFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('groupAvatarPreview');
+        preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`;
+    };
+    reader.readAsDataURL(file);
+}
+
 async function createGroup() {
     const name = document.getElementById('newGroupName').value.trim();
     if (!name)        { showToast('⚠️ Enter a group name'); return; }
     if (!selectedCat) { showToast('⚠️ Pick a category');   return; }
     showToast('Creating group...');
     if (typeof saveGroupToFirebase === 'function') {
-        const result = await saveGroupToFirebase(name, selectedCat);
+        const result = await saveGroupToFirebase(name, selectedCat, groupAvatarFile);
         if (result) {
             closeCreate();
             showToast(`🎉 "${name}" created!`);
+            // Reset avatar
+            groupAvatarFile = null;
+            document.getElementById('groupAvatarPreview').innerHTML = '<span id="groupAvatarEmoji">📷</span><span style="font-size:9px;color:#444;font-weight:800;letter-spacing:0.5px;">AVATAR</span>';
         } else {
             showToast('❌ Failed to create group');
         }
@@ -976,13 +1025,7 @@ function closeNotif() { document.getElementById('notifOverlay').classList.remove
 function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
 
-// ── NAV ───────────────────────────────────────────────────────────────────
-function navigateTo(key) { document.getElementById('page-' + key).classList.add('open'); }
-function closePage(key) {
-    document.getElementById('page-' + key).classList.remove('open');
-    document.querySelectorAll('.foot-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('foot-groups').classList.add('active');
-}
+// ── NAV — handled by real href links in footer ────────────────────────────
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
 let toastTimer;
