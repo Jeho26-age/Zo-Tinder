@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Zo-Tinder | Profile</title>
+    <title>Zo-Tinder | View Profile</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         /* ══ ROOT ══════════════════════════════════════════════ */
@@ -43,7 +43,6 @@
             flex-shrink: 0;
         }
 
-        /* Animated gradient overlay for default cover */
         .cover::before {
             content: '';
             position: absolute;
@@ -62,7 +61,6 @@
             100% { opacity: 1;   transform: scale(1.04); }
         }
 
-        /* Noise texture overlay */
         .cover::after {
             content: '';
             position: absolute;
@@ -94,7 +92,6 @@
             opacity: 0.7;
         }
 
-        /* Bottom fade on cover */
         .cover-fade {
             position: absolute;
             bottom: 0;
@@ -143,7 +140,63 @@
         .top-right {
             display: flex;
             gap: 8px;
+            position: relative;
         }
+
+        #menuBtn { font-size: 20px; font-weight: 900; letter-spacing: -1px; }
+
+        /* ══ POPUP MENU ═════════════════════════════════════════ */
+        .popup-menu {
+            display: none;
+            position: absolute;
+            top: 48px;
+            right: 0;
+            background: #1a1a24;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            overflow: hidden;
+            min-width: 210px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 200;
+            animation: popIn 0.18s ease;
+        }
+
+        .popup-menu.open { display: block; }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0);     }
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            color: var(--text);
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:active { background: rgba(255,255,255,0.05); }
+        .menu-item + .menu-item { border-top: 1px solid rgba(255,255,255,0.05); }
+        .menu-icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+        .menu-item.danger { color: var(--danger); }
+        .menu-item.mod    { color: var(--mod);    }
+        .menu-item.admin  { color: var(--admin);  }
+
+        /* Hidden until JS reveals based on viewer role */
+        .role-mod, .role-admin { display: none; }
+
+        .menu-divider { height: 1px; background: rgba(255,255,255,0.06); }
 
         /* ══ AVATAR SECTION ═════════════════════════════════════ */
         .avatar-section {
@@ -156,13 +209,7 @@
             padding-bottom: 4px;
         }
 
-        /* Frame wrapper — the frame sits here */
-        .avatar-wrap {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            flex-shrink: 0;
-        }
+        .avatar-wrap { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
 
         .avatar-img {
             width: 120px;
@@ -176,7 +223,6 @@
             background: var(--panel2);
         }
 
-        /* Default avatar placeholder */
         .avatar-placeholder {
             width: 120px;
             height: 120px;
@@ -191,10 +237,8 @@
             z-index: 5;
         }
 
-        /* ── NO FRAME (default new user) ── */
-        .frame-none { /* nothing */ }
+        .frame-none { }
 
-        /* ── FRAME BASE ── all frames are absolute positioned ring behind avatar ── */
         .avatar-frame {
             position: absolute;
             top: 50%;
@@ -207,7 +251,7 @@
             pointer-events: none;
         }
 
-        /* ── FRAME: Default cyan (current placeholder) ── */
+        /* ── FRAME: Default cyan ── */
         .frame-default .avatar-frame {
             border: 3px solid var(--accent);
             box-shadow: 0 0 20px var(--accent), inset 0 0 10px rgba(0,242,255,0.2);
@@ -216,25 +260,16 @@
 
         /* ── FRAME: Owner — molten gold ── */
         .frame-owner .avatar-frame {
-            background: conic-gradient(
-                #f5c842, #ffd700, #ff8c00, #f5c842, #fff176, #f5c842, #ffd700, #ff8c00, #f5c842
-            );
+            background: conic-gradient(#f5c842, #ffd700, #ff8c00, #f5c842, #fff176, #f5c842, #ffd700, #ff8c00, #f5c842);
             padding: 3px;
             animation: spin 3s linear infinite;
             box-shadow: 0 0 30px rgba(245,200,66,0.6), 0 0 60px rgba(245,200,66,0.2);
         }
         .frame-owner .avatar-frame::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 50%;
-            background: var(--bg);
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg);
         }
         .frame-owner .avatar-frame::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
             background: conic-gradient(transparent 0deg, rgba(245,200,66,0.4) 60deg, transparent 120deg);
             animation: spin 2s linear infinite reverse;
         }
@@ -242,27 +277,17 @@
         /* ── FRAME: Admin — electric red ── */
         .frame-admin .avatar-frame {
             border: 0;
-            background: conic-gradient(
-                #ff3e1d, #ff6b00, #ff3e1d, #ff0060, #ff3e1d, #ff6b00, #ff3e1d
-            );
+            background: conic-gradient(#ff3e1d, #ff6b00, #ff3e1d, #ff0060, #ff3e1d, #ff6b00, #ff3e1d);
             padding: 3px;
             animation: spin 2s linear infinite;
             box-shadow: 0 0 25px rgba(255,62,29,0.7), 0 0 50px rgba(255,62,29,0.2);
         }
         .frame-admin .avatar-frame::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 50%;
-            background: var(--bg);
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg);
         }
         .frame-admin .avatar-frame::before {
-            content: '';
-            position: absolute;
-            inset: -6px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,62,29,0.3);
-            animation: pulse-ring 1.5s ease-in-out infinite;
+            content: ''; position: absolute; inset: -6px; border-radius: 50%;
+            border: 2px solid rgba(255,62,29,0.3); animation: pulse-ring 1.5s ease-in-out infinite;
         }
 
         /* ── FRAME: Mod — purple double ring ── */
@@ -272,59 +297,36 @@
             animation: spin 5s linear infinite;
         }
         .frame-mod .avatar-frame::before {
-            content: '';
-            position: absolute;
-            inset: -8px;
-            border-radius: 50%;
-            border: 2px dashed rgba(167,139,250,0.4);
-            animation: spin 3s linear infinite reverse;
+            content: ''; position: absolute; inset: -8px; border-radius: 50%;
+            border: 2px dashed rgba(167,139,250,0.4); animation: spin 3s linear infinite reverse;
         }
 
-        /* ── FRAME: Fire (store) ── */
+        /* ── FRAME: Fire ── */
         .frame-fire .avatar-frame {
-            background: conic-gradient(
-                #ff4500, #ff8c00, #ffd700, #ff8c00, #ff4500, #cc0000, #ff4500
-            );
-            padding: 3px;
-            animation: spin 1.5s linear infinite;
-            filter: blur(0px);
+            background: conic-gradient(#ff4500, #ff8c00, #ffd700, #ff8c00, #ff4500, #cc0000, #ff4500);
+            padding: 3px; animation: spin 1.5s linear infinite;
             box-shadow: 0 0 30px rgba(255,69,0,0.8), 0 0 60px rgba(255,140,0,0.3);
         }
         .frame-fire .avatar-frame::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 50%;
-            background: var(--bg);
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg);
         }
         .frame-fire .avatar-frame::before {
-            content: '';
-            position: absolute;
-            inset: -8px;
-            border-radius: 50%;
+            content: ''; position: absolute; inset: -8px; border-radius: 50%;
             background: conic-gradient(transparent, rgba(255,69,0,0.3), transparent, rgba(255,140,0,0.3), transparent);
-            animation: spin 0.8s linear infinite reverse;
-            filter: blur(4px);
+            animation: spin 0.8s linear infinite reverse; filter: blur(4px);
         }
 
-        /* ── FRAME: Aurora (store) ── */
+        /* ── FRAME: Aurora ── */
         .frame-aurora .avatar-frame {
-            background: conic-gradient(
-                #00f2ff, #a78bfa, #00ff88, #00f2ff, #ff6bff, #a78bfa, #00f2ff
-            );
-            padding: 3px;
-            animation: spin 6s linear infinite;
+            background: conic-gradient(#00f2ff, #a78bfa, #00ff88, #00f2ff, #ff6bff, #a78bfa, #00f2ff);
+            padding: 3px; animation: spin 6s linear infinite;
             box-shadow: 0 0 30px rgba(0,242,255,0.4), 0 0 60px rgba(167,139,250,0.2);
         }
         .frame-aurora .avatar-frame::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 50%;
-            background: var(--bg);
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--bg);
         }
 
-        /* ── FRAME: Galaxy (store) ── */
+        /* ── FRAME: Galaxy ── */
         .frame-galaxy .avatar-frame {
             border: 3px solid transparent;
             background: linear-gradient(var(--bg), var(--bg)) padding-box,
@@ -333,15 +335,11 @@
             box-shadow: 0 0 20px rgba(74,0,224,0.5), 0 0 40px rgba(0,201,255,0.2);
         }
         .frame-galaxy .avatar-frame::before {
-            content: '';
-            position: absolute;
-            inset: -10px;
-            border-radius: 50%;
+            content: ''; position: absolute; inset: -10px; border-radius: 50%;
             background: radial-gradient(circle, rgba(142,45,226,0.15) 0%, transparent 70%);
             animation: pulse-ring 3s ease-in-out infinite;
         }
 
-        /* ── SHARED ANIMATIONS ── */
         @keyframes spin {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to   { transform: translate(-50%, -50%) rotate(360deg); }
@@ -352,29 +350,25 @@
             50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.05); }
         }
 
-        /* Online dot */
         .online-dot {
             position: absolute;
-            bottom: 6px;
-            right: 6px;
-            width: 14px;
-            height: 14px;
+            bottom: 6px; right: 6px;
+            width: 14px; height: 14px;
             border-radius: 50%;
             background: #00e676;
             border: 2px solid var(--bg);
             z-index: 10;
         }
 
-        /* ══ PROFILE INFO ═══════════════════════════════════════ */
+        /* ══ PROFILE BODY ═══════════════════════════════════════ */
         .profile-body {
             padding: 0 18px 100px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0;
         }
 
-        /* Name + badge row */
+        /* ══ NAME ROW ═══════════════════════════════════════════ */
         .name-row {
             display: flex;
             align-items: center;
@@ -392,7 +386,6 @@
             color: white;
         }
 
-        /* Role badges */
         .role-badge {
             display: inline-flex;
             align-items: center;
@@ -406,25 +399,10 @@
             flex-shrink: 0;
         }
 
-        .role-badge.owner {
-            background: rgba(245,200,66,0.15);
-            color: var(--owner);
-            border: 1px solid rgba(245,200,66,0.3);
-        }
+        .role-badge.owner { background: rgba(245,200,66,0.15); color: var(--owner); border: 1px solid rgba(245,200,66,0.3); }
+        .role-badge.admin { background: rgba(255,62,29,0.15);  color: var(--admin); border: 1px solid rgba(255,62,29,0.3);  }
+        .role-badge.mod   { background: rgba(167,139,250,0.15);color: var(--mod);   border: 1px solid rgba(167,139,250,0.3);}
 
-        .role-badge.admin {
-            background: rgba(255,62,29,0.15);
-            color: var(--admin);
-            border: 1px solid rgba(255,62,29,0.3);
-        }
-
-        .role-badge.mod {
-            background: rgba(167,139,250,0.15);
-            color: var(--mod);
-            border: 1px solid rgba(167,139,250,0.3);
-        }
-
-        /* Location */
         .profile-location {
             font-size: 13px;
             color: var(--sub);
@@ -436,6 +414,69 @@
 
         .profile-location span { color: #444; font-size: 12px; }
 
+        /* ══ ACTION BUTTONS (Follow + Like) ═════════════════════ */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .follow-btn {
+            flex: 1;
+            height: 46px;
+            border-radius: 14px;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+        }
+
+        .follow-btn:active { transform: scale(0.95); }
+
+        .follow-btn.state-follow {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .follow-btn.state-unfollow {
+            background: transparent;
+            color: var(--text);
+            border: 1.5px solid rgba(255,255,255,0.15);
+        }
+
+        .like-btn {
+            height: 46px;
+            padding: 0 20px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(255,255,255,0.08);
+            background: var(--panel);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.15s, border-color 0.2s, color 0.2s;
+        }
+
+        .like-btn:active { transform: scale(0.95); }
+
+        .like-btn.liked { border-color: rgba(255,60,100,0.4); color: #ff3c64; }
+
+        .like-icon { font-size: 16px; transition: transform 0.2s; }
+        .like-btn.liked .like-icon { transform: scale(1.25); }
+
+        .like-count { font-size: 14px; font-weight: 900; }
+
         /* ══ STATS ROW ══════════════════════════════════════════ */
         .stats-row {
             display: flex;
@@ -443,7 +484,7 @@
             background: var(--panel);
             border-radius: 20px;
             border: 1px solid var(--border);
-            margin-top: 20px;
+            margin-top: 12px;
             overflow: hidden;
         }
 
@@ -457,6 +498,7 @@
             color: inherit;
             position: relative;
             transition: background 0.15s;
+            cursor: pointer;
         }
 
         .stat-item:active { background: rgba(255,255,255,0.04); }
@@ -464,9 +506,7 @@
         .stat-item + .stat-item::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 20%;
-            height: 60%;
+            left: 0; top: 20%; height: 60%;
             width: 1px;
             background: var(--border);
         }
@@ -487,11 +527,7 @@
             font-weight: 800;
         }
 
-        .stat-arrow {
-            font-size: 9px;
-            color: #333;
-            margin-top: 2px;
-        }
+        .stat-arrow { font-size: 9px; color: #333; margin-top: 2px; }
 
         /* ══ SECTION CARD ═══════════════════════════════════════ */
         .section-card {
@@ -513,11 +549,7 @@
         }
 
         /* ══ INTERESTS ══════════════════════════════════════════ */
-        .interests-wrap {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+        .interests-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 
         .interest-tag {
             background: rgba(255,255,255,0.04);
@@ -533,27 +565,12 @@
         }
 
         /* ══ BIO ════════════════════════════════════════════════ */
-        .bio-text {
-            font-size: 14px;
-            color: #aaa;
-            line-height: 1.6;
-            font-weight: 600;
-        }
-
-        .bio-empty {
-            font-size: 13px;
-            color: #333;
-            font-style: italic;
-        }
+        .bio-text { font-size: 14px; color: #aaa; line-height: 1.6; font-weight: 600; }
+        .bio-empty { font-size: 13px; color: #333; font-style: italic; }
 
         /* ══ ACHIEVEMENTS ═══════════════════════════════════════ */
-        .achievements-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .achievements-wrap { display: flex; flex-direction: column; gap: 10px; }
 
-        /* Leaderboard rank rows inside achievements */
         .rank-row {
             display: flex;
             align-items: center;
@@ -579,223 +596,40 @@
         .rank-position.bronze { color: #cd7f32; }
         .rank-position.normal { color: var(--accent); }
 
-        /* Badge grid for future achievements */
-        .badge-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .badge-grid { display: flex; flex-wrap: wrap; gap: 10px; }
 
         .achievement-badge {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            padding: 10px 14px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 5px; padding: 10px 14px;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 14px;
-            min-width: 70px;
+            border-radius: 14px; min-width: 70px;
         }
 
         .achievement-icon { font-size: 1.6rem; }
 
         .achievement-label {
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #555;
-            text-align: center;
+            font-size: 9px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: #555; text-align: center;
         }
 
-        /* Leaderboard achievement glows */
-        .achievement-badge.gold {
-            border-color: rgba(245,200,66,0.25);
-            background: rgba(245,200,66,0.05);
-        }
-
-        .achievement-badge.gold .achievement-label { color: var(--gold); }
-
-        .achievement-badge.silver {
-            border-color: rgba(192,192,192,0.25);
-            background: rgba(192,192,192,0.04);
-        }
-
+        .achievement-badge.gold   { border-color: rgba(245,200,66,0.25);  background: rgba(245,200,66,0.05); }
+        .achievement-badge.silver { border-color: rgba(192,192,192,0.25); background: rgba(192,192,192,0.04); }
+        .achievement-badge.bronze { border-color: rgba(205,127,50,0.25);  background: rgba(205,127,50,0.04); }
+        .achievement-badge.gold .achievement-label   { color: var(--gold); }
         .achievement-badge.silver .achievement-label { color: #aaa; }
-
-        .achievement-badge.bronze {
-            border-color: rgba(205,127,50,0.25);
-            background: rgba(205,127,50,0.04);
-        }
-
         .achievement-badge.bronze .achievement-label { color: #cd7f32; }
+        .achievements-empty { font-size: 13px; color: #333; font-style: italic; }
 
-        .achievements-empty {
-            font-size: 13px;
-            color: #333;
-            font-style: italic;
-        }
-
-        /* ══ GROUPS ═════════════════════════════════════════════ */
-        .groups-scroll {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            scrollbar-width: none;
-        }
-
-        .groups-scroll::-webkit-scrollbar { display: none; }
-
-        .group-pill {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 14px;
-            padding: 8px 14px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-
-        .group-pill:active { background: rgba(255,255,255,0.08); }
-
-        .group-pill-av {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
-            background: var(--panel2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-
-        .group-pill-name {
-            font-size: 13px;
-            font-weight: 800;
-            color: #ccc;
-            white-space: nowrap;
-        }
-
-        .groups-empty {
-            font-size: 13px;
-            color: #333;
-            font-style: italic;
-        }
-
-        /* ══ INVENTORY BUTTON ═══════════════════════════════════ */
-        .inventory-btn {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 16px 20px;
-            margin-top: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            color: white;
-            transition: background 0.15s;
-        }
-
-        .inventory-btn:active { background: var(--panel2); }
-
-        .inventory-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .inventory-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: rgba(167,139,250,0.12);
-            border: 1px solid rgba(167,139,250,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-        }
-
-        .inventory-label {
-            font-size: 15px;
-            font-weight: 800;
-        }
-
-        .inventory-sub {
-            font-size: 11px;
-            color: var(--sub);
-            margin-top: 1px;
-            font-weight: 600;
-        }
-
-        .inventory-arrow {
-            color: #333;
-            font-size: 18px;
-        }
-
-        /* ══ CURRENCY ROW ═══════════════════════════════════════ */
-        .currency-row {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            margin-top: 12px;
-        }
-
-        .currency-card {
-            flex: 1;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .currency-card.coins { border-color: rgba(245,200,66,0.15); }
-        .currency-card.diamonds { border-color: rgba(0,242,255,0.15); }
-
-        .currency-icon { font-size: 1.4rem; flex-shrink: 0; }
-
-        .currency-info { display: flex; flex-direction: column; }
-
-        .currency-amount {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.3rem;
-            line-height: 1;
-        }
-
-        .currency-card.coins .currency-amount { color: var(--gold); }
-        .currency-card.diamonds .currency-amount { color: var(--accent); }
-
-        .currency-name {
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--sub);
-            margin-top: 2px;
-        }
-
-        /* ══ LOAD ANIMATIONS ════════════════════════════════════ */
+        /* ══ FADE-UP ════════════════════════════════════════════ */
         .fade-up {
             opacity: 0;
             transform: translateY(16px);
             animation: fadeUp 0.4s ease forwards;
         }
 
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
         .fade-up:nth-child(1) { animation-delay: 0.05s; }
         .fade-up:nth-child(2) { animation-delay: 0.10s; }
@@ -807,7 +641,7 @@
         .fade-up:nth-child(8) { animation-delay: 0.40s; }
         .fade-up:nth-child(9) { animation-delay: 0.45s; }
 
-        /* ══ SKELETON LOADER ════════════════════════════════════ */
+        /* ══ SKELETON ═══════════════════════════════════════════ */
         .skeleton {
             background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
             background-size: 200% 100%;
@@ -820,10 +654,9 @@
             100% { background-position: -200% 0; }
         }
 
-        /* ══ LOADING STATE ══════════════════════════════════════ */
+        /* ══ LOADING OVERLAY ════════════════════════════════════ */
         #loadingOverlay {
-            position: fixed;
-            inset: 0;
+            position: fixed; inset: 0;
             background: var(--bg);
             z-index: 999;
             display: flex;
@@ -833,23 +666,19 @@
         }
 
         .loader-ring {
-            width: 48px;
-            height: 48px;
+            width: 48px; height: 48px;
             border-radius: 50%;
             border: 3px solid rgba(255,255,255,0.05);
             border-top-color: var(--accent);
             animation: spin-loader 0.8s linear infinite;
         }
 
-        @keyframes spin-loader {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin-loader { to { transform: rotate(360deg); } }
 
         /* ══ TOAST ══════════════════════════════════════════════ */
         .toast {
             position: fixed;
-            bottom: 30px;
-            left: 50%;
+            bottom: 30px; left: 50%;
             transform: translateX(-50%) translateY(20px);
             background: #1a1a1a;
             border: 1px solid rgba(255,255,255,0.1);
@@ -865,9 +694,89 @@
             pointer-events: none;
         }
 
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ══ BOTTOM SHEET MODALS ════════════════════════════════ */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 500;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
+
+        @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-sheet {
+            background: #16161f;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px 48px;
+            width: 100%;
+            max-width: 480px;
+            animation: sheetUp 0.25s ease;
+        }
+
+        @keyframes sheetUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .modal-handle {
+            width: 36px; height: 4px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .modal-title { font-size: 17px; font-weight: 900; margin-bottom: 6px; }
+
+        .modal-sub {
+            font-size: 13px; color: var(--sub);
+            font-weight: 600; margin-bottom: 20px; line-height: 1.5;
+        }
+
+        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+        .modal-btn {
+            width: 100%; padding: 15px;
+            border-radius: 14px; border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px; font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .modal-btn:active { transform: scale(0.97); }
+
+        .modal-btn.confirm-danger { background: var(--danger); color: #fff; }
+        .modal-btn.confirm-mod   { background: var(--mod);    color: #fff; }
+        .modal-btn.cancel-btn    { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid rgba(255,255,255,0.08); }
+
+        /* Duration chips for temp ban */
+        .duration-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+
+        .duration-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1.5px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px; font-weight: 800;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
+        }
+
+        .duration-chip.selected {
+            border-color: var(--mod);
+            background: rgba(167,139,250,0.12);
+            color: var(--mod);
         }
     </style>
 </head>
@@ -886,9 +795,39 @@
 
     <!-- Top bar -->
     <div class="top-bar">
-        <a href="home.html" class="top-btn">←</a>
+        <a href="javascript:history.back()" class="top-btn">←</a>
+
         <div class="top-right">
-            <a href="edit-profile.html" class="top-btn" id="editBtn" title="Edit Profile">⚙️</a>
+            <button class="top-btn" id="menuBtn" aria-label="More options">⋮</button>
+
+            <div class="popup-menu" id="popupMenu">
+
+                <!-- ALL users -->
+                <button class="menu-item" id="menuFollowToggle">
+                    <span class="menu-icon" id="menuFollowIcon">➕</span>
+                    <span id="menuFollowLabel">Follow</span>
+                </button>
+
+                <button class="menu-item danger" id="menuBlock">
+                    <span class="menu-icon">🚫</span>
+                    Block User
+                </button>
+
+                <!-- Moderator+ only -->
+                <div class="menu-divider role-mod"></div>
+                <button class="menu-item mod role-mod" id="menuTempBan">
+                    <span class="menu-icon">⏳</span>
+                    Temporary Ban
+                </button>
+
+                <!-- Admin+ only -->
+                <div class="menu-divider role-admin"></div>
+                <button class="menu-item admin role-admin" id="menuBan">
+                    <span class="menu-icon">🔨</span>
+                    Ban User
+                </button>
+
+            </div>
         </div>
     </div>
 </div>
@@ -898,7 +837,6 @@
 
     <!-- Avatar -->
     <div class="avatar-section fade-up">
-        <!-- frame-none / frame-owner / frame-admin / frame-mod / frame-fire / frame-aurora / frame-galaxy -->
         <div class="avatar-wrap frame-none" id="avatarWrap">
             <div class="avatar-frame" id="avatarFrame"></div>
             <img class="avatar-img" id="avatarImg" src="" alt="avatar" style="display:none;">
@@ -910,7 +848,7 @@
     <!-- Name + role badge -->
     <div class="name-row fade-up">
         <div class="profile-name" id="profileName">—</div>
-        <div class="role-badge owner" id="roleBadge" style="display:none;"></div>
+        <div class="role-badge" id="roleBadge" style="display:none;"></div>
     </div>
 
     <!-- Location -->
@@ -919,32 +857,27 @@
         <span id="locationText"></span>
     </div>
 
-    <!-- Currency row -->
-    <div class="currency-row fade-up">
-        <div class="currency-card coins">
-            <div class="currency-icon">🪙</div>
-            <div class="currency-info">
-                <div class="currency-amount" id="coinAmount">0</div>
-                <div class="currency-name">Golden Coins</div>
-            </div>
-        </div>
-        <div class="currency-card diamonds">
-            <div class="currency-icon">💎</div>
-            <div class="currency-info">
-                <div class="currency-amount" id="diamondAmount">0</div>
-                <div class="currency-name">Diamonds</div>
-            </div>
-        </div>
+    <!-- Follow + Like buttons -->
+    <div class="action-row fade-up">
+        <button class="follow-btn state-follow" id="followBtn">
+            <span id="followBtnIcon">➕</span>
+            <span id="followBtnLabel">Follow</span>
+        </button>
+
+        <button class="like-btn" id="likeBtn">
+            <span class="like-icon" id="likeIcon">🤍</span>
+            <span class="like-count" id="likeCount">0</span>
+        </button>
     </div>
 
-    <!-- Stats -->
+    <!-- Stats — Followers & Following link to their lists -->
     <div class="stats-row fade-up">
-        <a href="followers.html" class="stat-item">
+        <a class="stat-item" id="followersLink" href="#">
             <div class="stat-num" id="statFollowers">0</div>
             <div class="stat-label">Followers</div>
             <div class="stat-arrow">›</div>
         </a>
-        <a href="following.html" class="stat-item">
+        <a class="stat-item" id="followingLink" href="#">
             <div class="stat-num" id="statFollowing">0</div>
             <div class="stat-label">Following</div>
             <div class="stat-arrow">›</div>
@@ -954,18 +887,6 @@
             <div class="stat-label">Likes</div>
         </div>
     </div>
-
-    <!-- Inventory button -->
-    <a href="inventory.html" class="inventory-btn fade-up">
-        <div class="inventory-left">
-            <div class="inventory-icon">🎒</div>
-            <div>
-                <div class="inventory-label">Inventory</div>
-                <div class="inventory-sub">Frames, chat bubbles &amp; more</div>
-            </div>
-        </div>
-        <div class="inventory-arrow">›</div>
-    </a>
 
     <!-- Interests -->
     <div class="section-card fade-up">
@@ -983,7 +904,7 @@
         </div>
     </div>
 
-    <!-- Achievements + Live Rankings -->
+    <!-- Achievements + Rankings -->
     <div class="section-card fade-up">
         <div class="section-title">Achievements</div>
         <div class="achievements-wrap" id="achievementsList">
@@ -996,13 +917,58 @@
 <!-- ══ TOAST ══ -->
 <div class="toast" id="toast"></div>
 
+<!-- ══ BLOCK MODAL ══ -->
+<div class="modal-overlay" id="blockModal">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">🚫 Block this user?</div>
+        <div class="modal-sub">They won't be able to see your profile or interact with you.</div>
+        <div class="modal-actions">
+            <button class="modal-btn confirm-danger" id="blockConfirmBtn">Block</button>
+            <button class="modal-btn cancel-btn"    id="blockCancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TEMP BAN MODAL ══ -->
+<div class="modal-overlay" id="tempBanModal">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">⏳ Temporary Ban</div>
+        <div class="modal-sub">Select how long to ban this user from the platform.</div>
+        <div class="duration-picker" id="durationPicker">
+            <button class="duration-chip selected" data-hours="1">1 Hour</button>
+            <button class="duration-chip" data-hours="6">6 Hours</button>
+            <button class="duration-chip" data-hours="24">1 Day</button>
+            <button class="duration-chip" data-hours="72">3 Days</button>
+            <button class="duration-chip" data-hours="168">1 Week</button>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn confirm-mod"  id="tempBanConfirmBtn">Apply Temp Ban</button>
+            <button class="modal-btn cancel-btn"   id="tempBanCancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ BAN MODAL ══ -->
+<div class="modal-overlay" id="banModal">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">🔨 Ban User</div>
+        <div class="modal-sub">This will permanently ban this user. Only an admin or owner can reverse this.</div>
+        <div class="modal-actions">
+            <button class="modal-btn confirm-danger" id="banConfirmBtn">Ban User</button>
+            <button class="modal-btn cancel-btn"     id="banCancelBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Fallback — hide loader after 5s even if profile.js errors
     setTimeout(() => {
         const ol = document.getElementById('loadingOverlay');
         if (ol) ol.style.display = 'none';
     }, 5000);
 </script>
-<script type="module" src="profile.js"></script>
+<script type="module" src="user-view.js"></script>
 </body>
 </html>

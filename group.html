@@ -883,7 +883,9 @@ let contextTarget = null;
 let selectedCat = '';
 let longPressTimer = null;
 
-// ── CARD EVENTS ── (navigation handled by group.js with correct ?id= params)
+// ── CARD EVENTS ──
+// Navigation is handled by group.js which includes the correct ?id= URL param
+// This only sets up long-press for context menu
 function initCardEvents() {
     document.querySelectorAll('#groupList .group-card').forEach(card => {
         card.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => openContext(card), 600); });

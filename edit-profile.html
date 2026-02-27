@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zo-Tinder | Edit Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ══ ROOT ══════════════════════════════════════════════════════════ */
+        :root {
+            --accent:  #00f2ff;
+            --accent2: #a78bfa;
+            --red:     #ff3e1d;
+            --gold:    #f5c842;
+            --bg:      #080808;
+            --panel:   #111117;
+            --panel2:  #16161e;
+            --border:  rgba(255,255,255,0.07);
+            --input-bg: rgba(255,255,255,0.04);
+            --label:   rgba(255,255,255,0.35);
+            --text:    #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            padding-bottom: 120px;
+        }
+
+        /* ══ BACKGROUND GLOW ════════════════════════════════════════════════ */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 20%, rgba(0,242,255,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 70%, rgba(167,139,250,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ══ TOP BAR ════════════════════════════════════════════════════════ */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 48px 18px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+            z-index: 100;
+        }
+
+        .top-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .top-btn:active { transform: scale(0.95); }
+
+        .top-btn.save {
+            background: var(--accent);
+            color: #000;
+            border-color: transparent;
+        }
+
+        .top-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            color: white;
+        }
+
+        /* ══ MAIN CONTENT ═══════════════════════════════════════════════════ */
+        .content {
+            padding: 120px 18px 0;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* ══ COVER SECTION ══════════════════════════════════════════════════ */
+        .cover-section {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(160deg, #0d0d1a, #1a0a1a);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .cover-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 50%, rgba(0,242,255,0.1) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 80% 30%, rgba(167,139,250,0.08) 0%, transparent 60%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #coverPreviewImg,
+        #coverPreviewVid {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            z-index: 0;
+        }
+
+        .cover-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            z-index: 2;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(0px);
+            transition: backdrop-filter 0.2s;
+        }
+
+        .cover-overlay-icon { font-size: 1.8rem; }
+
+        .cover-overlay-text {
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Cover type toggle */
+        .cover-type-row {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+        }
+
+        .cover-type-btn {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 900;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.5);
+            transition: all 0.15s;
+        }
+
+        .cover-type-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: transparent;
+        }
+
+        /* Video locked state */
+        .cover-locked {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            z-index: 4;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        .cover-locked.show { display: flex; }
+
+        .cover-locked-icon { font-size: 2rem; }
+
+        .cover-locked-text {
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+        }
+
+        .cover-locked-btn {
+            margin-top: 4px;
+            padding: 8px 20px;
+            background: var(--gold);
+            color: #000;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        /* Avatar overlapping cover */
+        .avatar-section {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            margin-top: -40px;
+            padding: 0 4px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .avatar-wrap {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .avatar-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--bg);
+            display: block;
+            background: var(--panel2);
+        }
+
+        .avatar-placeholder {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--panel2);
+            border: 3px solid var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .avatar-edit-badge {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            z-index: 5;
+        }
+
+        .avatar-hint {
+            font-size: 11px;
+            color: var(--label);
+            font-weight: 700;
+            padding-bottom: 8px;
+        }
+
+        /* ══ SECTION CARD ═══════════════════════════════════════════════════ */
+        .section-card {
+            background: var(--panel);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #444;
+        }
+
+        /* ══ INPUT FIELD ════════════════════════════════════════════════════ */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--label);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .field-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 16px;
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            outline: none;
+            transition: border-color 0.15s;
+            -webkit-appearance: none;
+        }
+
+        .field-input:focus {
+            border-color: rgba(0,242,255,0.4);
+        }
+
+        .field-input::placeholder { color: #333; }
+
+        textarea.field-input {
+            resize: none;
+            line-height: 1.6;
+            min-height: 90px;
+        }
+
+        /* Row of 2 inputs side by side */
+        .field-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .field-row .field { flex: 1; }
+
+        /* ══ SELECT STYLED ══════════════════════════════════════════════════ */
+        select.field-input {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        select.field-input option {
+            background: #111;
+            color: white;
+        }
+
+        /* ══ LOOKING FOR ════════════════════════════════════════════════════ */
+        .lookfor-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .lookfor-btn {
+            width: 100%;
+            padding: 13px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: rgba(255,255,255,0.4);
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lookfor-btn:active { transform: scale(0.98); }
+
+        .lookfor-btn.active {
+            border-color: rgba(0,242,255,0.4);
+            color: white;
+            background: rgba(0,242,255,0.06);
+        }
+
+        /* ══ INTERESTS ══════════════════════════════════════════════════════ */
+        .interests-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .interest-tag {
+            padding: 8px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .interest-tag:active { transform: scale(0.95); }
+
+        .interest-tag.active {
+            background: rgba(0,242,255,0.08);
+            border-color: rgba(0,242,255,0.35);
+            color: var(--accent);
+        }
+
+        .interest-count {
+            font-size: 11px;
+            color: var(--label);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* ══ SAVE BUTTON (fixed bottom) ═════════════════════════════════════ */
+        .save-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 18px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            background: linear-gradient(to top, var(--bg) 70%, transparent);
+            z-index: 100;
+        }
+
+        .save-btn {
+            width: 100%;
+            height: 54px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 18px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .save-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        /* ══ UPLOADING OVERLAY ══════════════════════════════════════════════ */
+        #uploadOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            z-index: 999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        #uploadOverlay.show { display: flex; }
+
+        .upload-spinner {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 3px solid rgba(0,242,255,0.1);
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .upload-label {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            color: var(--accent);
+        }
+
+        /* ══ TOAST ══════════════════════════════════════════════════════════ */
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            opacity: 0;
+            transition: all 0.25s;
+            z-index: 9999;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success { border-color: rgba(0,242,255,0.3); color: var(--accent); }
+        .toast.error   { border-color: rgba(255,62,29,0.3); color: #ff6b50; }
+
+        /* ══ FADE IN ════════════════════════════════════════════════════════ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(12px);
+            animation: fadeIn 0.35s ease forwards;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .fade-in:nth-child(1) { animation-delay: 0.05s; }
+        .fade-in:nth-child(2) { animation-delay: 0.10s; }
+        .fade-in:nth-child(3) { animation-delay: 0.15s; }
+        .fade-in:nth-child(4) { animation-delay: 0.20s; }
+        .fade-in:nth-child(5) { animation-delay: 0.25s; }
+        .fade-in:nth-child(6) { animation-delay: 0.30s; }
+        .fade-in:nth-child(7) { animation-delay: 0.35s; }
+        .fade-in:nth-child(8) { animation-delay: 0.40s; }
+
+        /* hidden file inputs */
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- ══ UPLOAD OVERLAY ══ -->
+<div id="uploadOverlay">
+    <div class="upload-spinner"></div>
+    <div class="upload-label">SAVING...</div>
+</div>
+
+<!-- ══ TOP BAR ══ -->
+<div class="top-bar">
+    <a href="profile.html" class="top-btn" id="backBtn">← Back</a>
+    <div class="top-title">Edit Profile</div>
+    <button class="top-btn save" onclick="saveProfile()">Save ✓</button>
+</div>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="content">
+
+    <!-- Cover -->
+    <div class="cover-section fade-in" id="coverSection" onclick="handleCoverClick()">
+        <img id="coverPreviewImg" src="" alt="cover">
+        <video id="coverPreviewVid" autoplay loop muted playsinline></video>
+
+        <div class="cover-overlay" id="coverOverlay">
+            <div class="cover-overlay-icon">🖼️</div>
+            <div class="cover-overlay-text">Tap to change cover</div>
+        </div>
+
+        <!-- Cover type toggle -->
+        <div class="cover-type-row">
+            <button class="cover-type-btn active" id="btnCoverImg" onclick="event.stopPropagation(); setCoverType('image')">📷 Image</button>
+            <button class="cover-type-btn" id="btnCoverVid" onclick="event.stopPropagation(); setCoverType('video')">🎬 Video</button>
+        </div>
+
+        <!-- Video locked overlay -->
+        <div class="cover-locked" id="coverLocked">
+            <div class="cover-locked-icon">🔒</div>
+            <div class="cover-locked-text">Video cover is a<br>premium feature</div>
+            <button class="cover-locked-btn" onclick="window.location.href='store.html'">Unlock from Store</button>
+        </div>
+    </div>
+
+    <!-- Avatar + hint -->
+    <div class="avatar-section fade-in">
+        <div class="avatar-wrap" onclick="document.getElementById('photoInput').click()">
+            <img class="avatar-img" id="avatarPreview" src="" style="display:none;" alt="avatar">
+            <div class="avatar-placeholder" id="avatarPlaceholder">👤</div>
+            <div class="avatar-edit-badge">✏️</div>
+        </div>
+        <div class="avatar-hint">Tap to change profile photo</div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="section-card fade-in">
+        <div class="section-title">Basic Info</div>
+
+        <div class="field">
+            <div class="field-label">Username</div>
+            <input class="field-input" type="text" id="username" placeholder="Your username" maxlength="30" autocomplete="off">
+        </div>
+
+        <div class="field-row">
+            <div class="field">
+                <div class="field-label">Age</div>
+                <input class="field-input" type="number" id="age" placeholder="Age" min="16" max="99">
+            </div>
+            <div class="field">
+                <div class="field-label">Gender</div>
+                <select class="field-input" id="gender">
+                    <option value="" disabled selected>Select</option>
+                    <option value="Mipa">Mipa (Male)</option>
+                    <option value="Hmeichhe">Hmeichhe (Female)</option>
+                    <option value="Gay">Gay</option>
+                    <option value="Lesbian">Lesbian</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location -->
+    <div class="section-card fade-in">
+        <div class="section-title">Location</div>
+
+        <div class="field-row">
+            <div class="field">
+                <div class="field-label">Khaw (Town)</div>
+                <input class="field-input" type="text" id="khaw" placeholder="e.g. Aizawl" autocomplete="off">
+            </div>
+            <div class="field">
+                <div class="field-label">Veng</div>
+                <input class="field-input" type="text" id="veng" placeholder="e.g. Bawngkawn" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <!-- Looking For -->
+    <div class="section-card fade-in">
+        <div class="section-title">Looking For</div>
+        <div class="lookfor-grid">
+            <button class="lookfor-btn" id="lf-kawp" onclick="setLookFor('kawp pui tur')">💍 Kawp pui tur</button>
+            <button class="lookfor-btn" id="lf-thian" onclick="setLookFor('Thian tur')">🤝 Thian tur</button>
+            <button class="lookfor-btn" id="lf-vibing" onclick="setLookFor('Join ve mai mai')">✨ Join ve mai mai</button>
+        </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="section-card fade-in">
+        <div class="section-title">Bio</div>
+        <div class="field">
+            <textarea class="field-input" id="bio" placeholder="I chanchin tlem ziak rawh..." maxlength="200" rows="4"></textarea>
+            <div class="interest-count" id="bioCount">0 / 200</div>
+        </div>
+    </div>
+
+    <!-- Interests -->
+    <div class="section-card fade-in">
+        <div class="section-title">Interests</div>
+        <div class="interest-count" id="interestCount">0 / 5 selected</div>
+        <div class="interests-grid" id="interestsGrid"></div>
+    </div>
+
+</div>
+
+<!-- ══ SAVE BAR ══ -->
+<div class="save-bar">
+    <button class="save-btn" onclick="saveProfile()">
+        <span>Save Changes</span>
+        <span>✓</span>
+    </button>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<!-- File inputs -->
+<input type="file" id="photoInput" accept="image/*">
+<input type="file" id="coverImgInput" accept="image/*">
+<input type="file" id="coverVidInput" accept="video/mp4,video/webm">
+
+<script type="module" src="edit-profile.js"></script>
+</body>
+</html>

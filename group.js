@@ -114,12 +114,23 @@ function loadUserGroups(uid) {
 
         const groupIds = Object.keys(snap.val()).filter(id => id !== 'official_global');
 
+        // Load hidden timestamps
+        const hiddenSnap = await get(ref(db, `users/${uid}/hiddenGroups`));
+        const hidden = hiddenSnap.exists() ? hiddenSnap.val() : {};
+
         const groupPromises = groupIds.map(async (groupId) => {
             const groupSnap = await get(ref(db, `groups/${groupId}`));
-            if (groupSnap.exists()) {
-                return { id: groupId, ...groupSnap.val() };
+            if (!groupSnap.exists()) return null;
+            const data = groupSnap.val();
+            // Skip if user hid this group AND no new messages since hiding
+            if (hidden[groupId] && (!data.lastMessageAt || data.lastMessageAt <= hidden[groupId])) {
+                return null;
             }
-            return null;
+            // If new message arrived after hiding — remove from hidden list
+            if (hidden[groupId] && data.lastMessageAt && data.lastMessageAt > hidden[groupId]) {
+                set(ref(db, `users/${uid}/hiddenGroups/${groupId}`), null);
+            }
+            return { id: groupId, ...data };
         });
 
         const groups = (await Promise.all(groupPromises)).filter(Boolean);
@@ -178,13 +189,10 @@ function createGroupCard(group, index) {
     const time = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
     const unread = group.unread || 0;
     const isOnline = group.onlineCount > 0;
-    const avatarContent = group.avatarURL
-        ? `<img src="${group.avatarURL}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`
-        : emoji;
 
     card.innerHTML = `
         <div class="avatar-wrap">
-            <div class="avatar-emoji" style="background:${bg};">${avatarContent}</div>
+            <div class="avatar-emoji" style="background:${bg};">${emoji}</div>
             ${isOnline ? '<div class="online-dot"></div>' : ''}
         </div>
         <div class="group-info">
@@ -238,8 +246,6 @@ window.saveGroupToFirebase = async function(name, category) {
         memberCount: 1,
         isPublic: true,
         onlineCount: 0,
-        // group-level roles stored here, separate from app-level roles in users/{uid}/role
-        roles: { [currentUser.uid]: 'admin' },
         members: {
             [currentUser.uid]: true
         }
@@ -262,12 +268,23 @@ window.saveGroupToFirebase = async function(name, category) {
 };
 
 // ── LEAVE GROUP ──────────────────────────────────
-window.leaveGroupFirebase = async function(groupId) {
+window.leaveGroupFirebase = async function(groupId, recordLeft = false) {
     if (!currentUser || !groupId) return;
 
     try {
-        await set(ref(db, `users/${currentUser.uid}/groups/${groupId}`), null);
-        await set(ref(db, `groups/${groupId}/members/${currentUser.uid}`), null);
+        const ops = [
+            set(ref(db, `users/${currentUser.uid}/groups/${groupId}`), null),
+            set(ref(db, `groups/${groupId}/members/${currentUser.uid}`), null),
+        ];
+
+        if (recordLeft) {
+            // Write to left list — blocks re-entry into this group
+            ops.push(set(ref(db, `groups/${groupId}/left/${currentUser.uid}`), { at: Date.now() }));
+            // Remove any group role
+            ops.push(set(ref(db, `groups/${groupId}/roles/${currentUser.uid}`), null));
+        }
+
+        await Promise.all(ops);
 
         const groupSnap = await get(ref(db, `groups/${groupId}`));
         if (groupSnap.exists()) {
@@ -277,6 +294,15 @@ window.leaveGroupFirebase = async function(groupId) {
     } catch (err) {
         console.error('Error leaving group:', err);
     }
+};
+
+// ── HIDE GROUP FROM USER VIEW (reappears on new message) ─────────────────────
+window.hideGroupForUser = async function(groupId) {
+    if (!currentUser || !groupId) return;
+    try {
+        // Store hidden timestamp — group.js will skip groups hidden until last message is newer
+        await set(ref(db, `users/${currentUser.uid}/hiddenGroups/${groupId}`), Date.now());
+    } catch(err) { console.error('hideGroupForUser error:', err); }
 };
 
 // ── FILTER CATEGORY (called from HTML chips) ─────

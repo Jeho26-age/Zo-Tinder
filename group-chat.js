@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 import {
-    getDatabase, ref, get, set, push, onValue, remove, update, serverTimestamp, query, orderByChild, limitToLast, onDisconnect
+    getDatabase, ref, get, set, push, onValue, remove, update, serverTimestamp, query, orderByChild, limitToLast
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // ══ FIREBASE CONFIG ══════════════════════════════
@@ -85,7 +85,6 @@ let selectedRoleOpt  = 'mod';
 let selectedAdminOpt = 'promote';
 let selectedBanDur   = '1h';
 let currentMemberTarget = null; // { name, role, uid }
-let currentGroupRole    = 'member'; // role in this specific group
 let isRecording      = false;
 let toastTimer       = null;
 
@@ -107,39 +106,52 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 
+    // Block kicked/left members from re-entering (official group is always open)
+    if (GROUP_ID !== 'official_global') {
+        const kickedSnap = await get(ref(db, `groups/${GROUP_ID}/kicked/${user.uid}`));
+        const leftSnap   = await get(ref(db, `groups/${GROUP_ID}/left/${user.uid}`));
+        if (kickedSnap.exists() || leftSnap.exists()) {
+            // Show blocked screen and stop
+            document.body.innerHTML = `
+                <div style="height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+                            background:#080808;color:white;font-family:'Nunito',sans-serif;gap:16px;padding:24px;text-align:center;">
+                    <div style="font-size:3rem;">${kickedSnap.exists() ? '🚫' : '🚪'}</div>
+                    <div style="font-size:1.1rem;font-weight:900;">${kickedSnap.exists() ? 'You were removed from this group' : 'You left this group'}</div>
+                    <div style="font-size:13px;color:#555;">You can no longer access this group.</div>
+                    <button onclick="window.location.href='group.html'"
+                        style="margin-top:8px;padding:12px 28px;background:#ff3e1d;border:none;border-radius:14px;
+                               color:white;font-weight:900;font-size:14px;cursor:pointer;">← Go Back</button>
+                </div>`;
+            return;
+        }
+    }
+
     // Auto join group
     const memberRef = ref(db, `users/${user.uid}/groups/${GROUP_ID}`);
     const memberSnap = await get(memberRef);
     if (!memberSnap.exists()) await set(memberRef, true);
 
-    // ── PRESENCE ──
-    const _presRef = ref(db, `users/${user.uid}/isOnline`);
-    const _seenRef = ref(db, `users/${user.uid}/lastSeen`);
-    set(_presRef, true);
-    set(_seenRef, Date.now());
-    onDisconnect(_presRef).set(false);
-    onDisconnect(_seenRef).set(Date.now());
-    onDisconnect(ref(db, `groups/${GROUP_ID}/typing/${user.uid}`)).remove();
-
-    // ── GROUP-LEVEL ROLE (non-official groups only) ──
-    if (GROUP_ID !== 'official_global') {
-        onValue(ref(db, `groups/${GROUP_ID}/roles/${user.uid}`), snap => {
-            currentGroupRole = snap.exists() ? snap.val() : 'member';
-        });
-    }
-    // ── APP-LEVEL ROLE realtime ──
-    onValue(ref(db, `users/${user.uid}/role`), snap => {
-        if (user.uid !== OWNER_UID && snap.exists()) currentUserRole = snap.val();
-    });
-
+    // Load group meta (member count, pinned etc)
     loadGroupMeta();
+
+    // Listen to messages realtime
     listenMessages();
-    listenOnlineCount();
-    listenTyping();
+
+    // Build waveform
     buildWaveform('wv1');
+
+    // Init swipe to reply
     initSwipeToReply();
+
+    // Load real members and posts from Firebase
     loadMembers();
     listenPosts();
+
+    // Typing simulator (demo)
+    setTimeout(() => {
+        const ti = document.getElementById('typingIndicator');
+        if (ti) { ti.classList.add('show'); setTimeout(() => ti.classList.remove('show'), 3000); }
+    }, 2000);
 });
 
 // ══ LOAD GROUP META ══════════════════════════════
@@ -167,12 +179,6 @@ async function loadGroupMeta() {
         if (GROUP_ID === 'official_global') {
             setHeader('Zo-Tinder Official', '🔥', '#1a0a0a', true);
             prefillEditModal('Zo-Tinder Official', 'The official Zo-Tinder community 🔥');
-            if (metaSnap.exists() && metaSnap.val().readMode) {
-                isReadMode = true;
-                document.getElementById('readModeToggle')?.classList.add('on');
-                document.getElementById('readModeBanner')?.classList.add('show');
-                if (!canSendMessage()) document.getElementById('inputArea').style.display = 'none';
-            }
         } else if (metaSnap.exists()) {
             const meta = metaSnap.val();
             const name   = meta.name   || GROUP_NAME_FROM_URL || 'Group Chat';
@@ -195,28 +201,22 @@ async function loadGroupMeta() {
 }
 
 function setHeader(name, avatarOrEmoji, bg, isOfficial) {
-    // null = leave it unchanged
-    if (name) {
-        const nameEl = document.getElementById('groupName');
-        if (nameEl) nameEl.childNodes[0].textContent = name + ' ';
-        document.title = name + ' | Zo-Tinder';
-    }
+    const nameEl = document.getElementById('groupName');
+    if (nameEl) nameEl.childNodes[0].textContent = name + ' ';
     const badge = document.getElementById('officialBadge');
     if (badge) badge.style.display = isOfficial ? '' : 'none';
-    const label2 = document.getElementById('officialLabel');
-    if (label2) label2.style.display = isOfficial ? '' : 'none';
-    if (avatarOrEmoji) {
-        const avEl = document.getElementById('groupAv');
-        if (avEl) {
-            if (bg) avEl.style.background = bg;
-            if (avatarOrEmoji.startsWith('http')) {
-                avEl.innerHTML = `<img src="${avatarOrEmoji}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
-            } else {
-                avEl.innerHTML = '';
-                avEl.textContent = avatarOrEmoji;
-            }
+    const label = document.getElementById('officialLabel');
+    if (label) label.style.display = isOfficial ? '' : 'none';
+    const avEl = document.getElementById('groupAv');
+    if (avEl) {
+        avEl.style.background = bg;
+        if (avatarOrEmoji && avatarOrEmoji.startsWith('http')) {
+            avEl.innerHTML = `<img src="${avatarOrEmoji}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
+        } else {
+            avEl.textContent = avatarOrEmoji || '💬';
         }
     }
+    document.title = name + ' | Zo-Tinder';
 }
 
 function prefillEditModal(name, desc) {
@@ -225,58 +225,6 @@ function prefillEditModal(name, desc) {
     if (n) n.value = name;
     if (d) d.value = desc;
 }
-
-// ══ ONLINE COUNT ════════════════════════════════
-function listenOnlineCount() {
-    onValue(ref(db, 'users'), snap => {
-        let n = 0;
-        snap.forEach(child => {
-            const u = child.val();
-            if (u?.groups?.[GROUP_ID] && u?.isOnline) n++;
-        });
-        const el = document.getElementById('onlineCount');
-        if (el) el.textContent = n;
-    });
-}
-
-// ══ TYPING ═══════════════════════════════════════
-let _typingTimer = null;
-
-function listenTyping() {
-    onValue(ref(db, `groups/${GROUP_ID}/typing`), snap => {
-        const ti  = document.getElementById('typingIndicator');
-        const txt = document.getElementById('typingText');
-        if (!ti || !txt) return;
-        if (!snap.exists()) { ti.classList.remove('show'); return; }
-
-        const now = Date.now();
-        const names = [];
-        snap.forEach(child => {
-            const d = child.val();
-            if (d?.name && d?.t && (now - d.t < 4000) && child.key !== currentUser?.uid) {
-                names.push(d.name);
-            }
-        });
-
-        if (!names.length) { ti.classList.remove('show'); return; }
-
-        txt.textContent = names.length === 1
-            ? `${names[0]} is typing`
-            : names.length === 2
-                ? `${names[0]} and ${names[1]} are typing`
-                : `${names.length} people are typing`;
-        ti.classList.add('show');
-    });
-}
-
-function broadcastTyping() {
-    if (!currentUser || !currentUserData) return;
-    const r = ref(db, `groups/${GROUP_ID}/typing/${currentUser.uid}`);
-    set(r, { name: currentUserData.username || 'User', t: Date.now() });
-    clearTimeout(_typingTimer);
-    _typingTimer = setTimeout(() => remove(r), 3000);
-}
-window.broadcastTyping = broadcastTyping;
 
 // ══ MESSAGES — REALTIME LISTENER ═════════════════
 function listenMessages() {
@@ -552,8 +500,8 @@ function openMsgMenu(e, el, type, key) {
     currentMsgType   = type;
     currentMsgKey    = key || null;
 
-    const canDelete = type === 'own' || canModerateGroup();
-    const canKick   = type === 'other' && canModerateGroup();
+    const canDelete = type === 'own' || canModerate();
+    const canKick   = type === 'other' && canModerate();
 
     document.getElementById('msgDeleteOpt').style.display = canDelete ? '' : 'none';
     document.getElementById('msgKickOpt').style.display   = canKick   ? '' : 'none';
@@ -586,7 +534,7 @@ async function doMsgAction(action) {
     if (action === 'pin') {
         const text = (currentMsgTarget?.innerText?.trim() || '').substring(0, 80);
         document.getElementById('pinnedText').textContent = text;
-        if (canModerateGroup()) await set(ref(db, `groups/${GROUP_ID}/pinned`), text);
+        if (canModerate()) await set(ref(db, `groups/${GROUP_ID}/pinned`), text);
         showToast('📌 Message pinned!');
     }
     if (action === 'delete') {
@@ -637,14 +585,24 @@ function toggleReact(pill) { pill.classList.toggle('own-react'); }
 window.toggleReact = toggleReact;
 
 // ══ SETTINGS ══════════════════════════════════════
-function openSettings() { document.getElementById('settingsOverlay').classList.add('show'); }
+function openSettings() {
+    const isOfficial = GROUP_ID === 'official_global';
+
+    // Leave Group — hide in official group
+    const leaveBtn = document.getElementById('leaveGroupBtn');
+    const leaveDivider = document.getElementById('leaveGroupDivider');
+    if (leaveBtn)     leaveBtn.style.display     = isOfficial ? 'none' : '';
+    if (leaveDivider) leaveDivider.style.display = isOfficial ? 'none' : '';
+
+    document.getElementById('settingsOverlay').classList.add('show');
+}
 window.openSettings = openSettings;
 
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
 window.closeSettings = closeSettings;
 
 async function toggleReadMode() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     isReadMode = !isReadMode;
     document.getElementById('readModeToggle').classList.toggle('on', isReadMode);
     document.getElementById('readModeBanner').classList.toggle('show', isReadMode);
@@ -655,7 +613,7 @@ async function toggleReadMode() {
 window.toggleReadMode = toggleReadMode;
 
 async function togglePrivate() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     isPrivate = !isPrivate;
     document.getElementById('privateToggle').classList.toggle('on', isPrivate);
     await update(ref(db, `groups/${GROUP_ID}`), { isPrivate });
@@ -679,7 +637,7 @@ function closeEditGroup(e) {
 window.closeEditGroup = closeEditGroup;
 
 async function saveGroupEdit() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     const name = document.getElementById('editGroupName').value.trim();
     const desc = document.getElementById('editGroupDesc').value.trim();
     if (!name) { showToast('⚠️ Name cannot be empty'); return; }
@@ -691,7 +649,7 @@ async function saveGroupEdit() {
 window.saveGroupEdit = saveGroupEdit;
 
 async function changeGroupAvatar() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
     input.onchange = async (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -714,7 +672,7 @@ window.changeGroupAvatar = changeGroupAvatar;
 // clearChat removed — no deleteGroup either
 // ── CLEAR CHAT (admin/owner only) ─────────────────
 async function clearChat() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     closeSettings();
     const confirmed = confirm('Clear all messages for everyone? This cannot be undone.');
     if (!confirmed) return;
@@ -729,6 +687,30 @@ async function clearChat() {
     }
 }
 window.clearChat = clearChat;
+
+// ══ LEAVE GROUP (member initiated) ══════════════
+async function leaveGroup() {
+    if (GROUP_ID === 'official_global') { showToast('⛔ You cannot leave the official group'); return; }
+    closeSettings();
+    const confirmed = confirm('Leave this group? You will not be able to rejoin.');
+    if (!confirmed) return;
+
+    try {
+        await Promise.all([
+            // Mark as left (blocks re-entry)
+            set(ref(db, `groups/${GROUP_ID}/left/${currentUser.uid}`), { at: Date.now() }),
+            // Remove from user's group list
+            remove(ref(db, `users/${currentUser.uid}/groups/${GROUP_ID}`)),
+            // Remove from group members
+            remove(ref(db, `groups/${GROUP_ID}/members/${currentUser.uid}`)),
+            // Remove any group role
+            remove(ref(db, `groups/${GROUP_ID}/roles/${currentUser.uid}`)),
+        ]);
+        showToast('🚪 You left the group');
+        setTimeout(() => { window.location.href = 'group.html'; }, 800);
+    } catch(e) { showToast('❌ Failed to leave group'); }
+}
+window.leaveGroup = leaveGroup;
 
 // ══ ASSIGN ROLE ═══════════════════════════════════
 function openAssignRole() {
@@ -751,7 +733,7 @@ function selectRoleOpt(opt) {
 window.selectRoleOpt = selectRoleOpt;
 
 async function confirmAssignRole() {
-    if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
+    if (!canAdmin()) { showToast('⛔ Admins only'); return; }
     const name = document.getElementById('roleTargetName').value.trim();
     if (!name) { showToast('⚠️ Enter a member name'); return; }
 
@@ -806,9 +788,9 @@ async function confirmAdminAction() {
 window.confirmAdminAction = confirmAdminAction;
 
 // ══ MEMBER OPTIONS ════════════════════════════════
-function openMemberOptions(e, name, role, uid) {
+function openMemberOptions(e, name, role) {
     e.stopPropagation();
-    currentMemberTarget = { name, role, uid };
+    currentMemberTarget = { name, role };
 
     document.getElementById('memberOptName').textContent = name;
 
@@ -835,58 +817,52 @@ window.closeMemberOpts = closeMemberOpts;
 async function memberAction(action) {
     closeMemberOpts();
     const name = currentMemberTarget?.name || 'User';
-    const uid  = currentMemberTarget?.uid || await findUidByUsername(name);
+    const uid  = await findUidByUsername(name);
 
     if (action === 'profile') { window.location.href = 'user-view.html'; return; }
-    if (!uid) { showToast('❌ User not found'); return; }
 
     if (action === 'makeAdmin') {
-        // Only app owner can grant app-level admin
         if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        await set(ref(db, `users/${uid}/role`), 'admin');
-        showToast(`⚙️ ${name} is now App Admin!`);
-        loadMembers(); return;
+        if (uid) await set(ref(db, `users/${uid}/role`), 'admin');
+        showToast(`⚙️ ${name} is now Admin!`);
     }
     if (action === 'removeAdmin') {
         if (!isOwner()) { showToast('⛔ Owner only'); return; }
-        await set(ref(db, `users/${uid}/role`), 'member');
+        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
         showToast(`👤 ${name} removed as Admin`);
-        loadMembers(); return;
     }
     if (action === 'assignMod') {
-        if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
-        if (GROUP_ID === 'official_global') {
-            // Official group → app-level mod (works everywhere)
-            await set(ref(db, `users/${uid}/role`), 'mod');
-            showToast(`🛡️ ${name} is now App Moderator!`);
-        } else {
-            // Individual group → group-level mod (this group only)
-            await set(ref(db, `groups/${GROUP_ID}/roles/${uid}`), 'mod');
-            showToast(`🛡️ ${name} is Moderator of this group`);
-        }
-        loadMembers(); return;
+        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+        if (uid) await set(ref(db, `users/${uid}/role`), 'mod');
+        showToast(`🛡️ ${name} is now a Moderator!`);
     }
     if (action === 'removeMod') {
-        if (!canManageGroup()) { showToast('⛔ Admins only'); return; }
-        if (GROUP_ID === 'official_global') {
-            await set(ref(db, `users/${uid}/role`), 'member');
-        } else {
-            await remove(ref(db, `groups/${GROUP_ID}/roles/${uid}`));
-        }
+        if (!canAdmin()) { showToast('⛔ Admins only'); return; }
+        if (uid) await set(ref(db, `users/${uid}/role`), 'member');
         showToast(`👤 ${name} role removed`);
-        loadMembers(); return;
     }
-    if (action === 'mute') {
-        if (!canModerateGroup()) { showToast('⛔ Mods only'); return; }
-        await set(ref(db, `groups/${GROUP_ID}/muted/${uid}`), { mutedAt: Date.now(), by: currentUser.uid });
-        showToast(`🔇 ${name} muted`); return;
-    }
-    if (action === 'warn') { showToast(`⚠️ Warning sent to ${name}`); return; }
+    if (action === 'mute')   { showToast(`🔇 ${name} muted`); }
+    if (action === 'warn')   { showToast(`⚠️ Warning sent to ${name}`); }
     if (action === 'kick') {
         if (!canModerateGroup()) { showToast('⛔ Mods only'); return; }
-        await remove(ref(db, `users/${uid}/groups/${GROUP_ID}`));
-        showToast(`🚫 ${name} removed from group`);
-        loadMembers(); return;
+        if (!uid) { showToast('❌ User not found'); return; }
+        // App owner cannot be kicked
+        if (uid === OWNER_UID) { showToast('⛔ Cannot kick app owner'); return; }
+        try {
+            await Promise.all([
+                // Add to kicked list (blocks re-entry)
+                set(ref(db, `groups/${GROUP_ID}/kicked/${uid}`), { by: currentUser.uid, at: Date.now() }),
+                // Remove from user's group list
+                remove(ref(db, `users/${uid}/groups/${GROUP_ID}`)),
+                // Remove from group members
+                remove(ref(db, `groups/${GROUP_ID}/members/${uid}`)),
+                // Remove group-level role if any
+                remove(ref(db, `groups/${GROUP_ID}/roles/${uid}`)),
+            ]);
+            showToast(`🚫 ${name} removed from group`);
+            loadMembers();
+        } catch(e) { showToast('❌ Failed to kick'); }
+        return;
     }
 }
 window.memberAction = memberAction;
@@ -917,7 +893,7 @@ function selectBanDur(btn, dur) {
 window.selectBanDur = selectBanDur;
 
 async function confirmTempBan() {
-    if (!canModerateGroup()) { showToast('⛔ Moderators only'); return; }
+    if (!canModerate()) { showToast('⛔ Moderators only'); return; }
     const name   = currentMemberTarget?.name || 'User';
     const reason = document.getElementById('banReason').value.trim();
     const uid    = await findUidByUsername(name);
@@ -1205,7 +1181,6 @@ function onInput(el) {
     const has = el.value.trim().length > 0;
     document.getElementById('sendBtn').style.display  = has ? 'flex' : 'none';
     document.getElementById('voiceBtn').style.display = has ? 'none' : 'flex';
-    if (has) broadcastTyping();
 }
 window.onInput = onInput;
 
@@ -1228,22 +1203,12 @@ function buildWaveform(id) {
     });
 }
 
-// ══ ROLE HELPERS — TWO-TIER ═══════════════════════
-// APP-LEVEL  (users/{uid}/role):             owner/admin/mod — power everywhere
-// GROUP-LEVEL (groups/{id}/roles/{uid}):     admin/mod — power in that group only
-// App-level always beats group-level. "Owner" = app owner only, never per-group.
-
-function isOwner()          { return currentUserRole === 'owner'; }
-function canAdmin()         { return ['owner','admin'].includes(currentUserRole); }
-function canModerate()      { return ['owner','admin','mod'].includes(currentUserRole); }
-
-// Can manage THIS group (edit info, avatar, clear chat, modes)
+// ══ ROLE HELPERS ══════════════════════════════════
+function isOwner()      { return currentUserRole === 'owner'; }
+function canAdmin()     { return ['owner','admin'].includes(currentUserRole); }
+function canModerate()  { return ['owner','admin','mod'].includes(currentUserRole); }
 function canManageGroup()   { return canAdmin() || currentGroupRole === 'admin'; }
-
-// Can moderate members in THIS group (warn, kick, mute, ban)
 function canModerateGroup() { return canModerate() || ['admin','mod'].includes(currentGroupRole); }
-
-// Sending: respects readMode unless app admin or group admin
 function canSendMessage()   { return !isReadMode || canAdmin() || currentGroupRole === 'admin'; }
 
 function roleColor(role) {
@@ -1257,7 +1222,6 @@ function getRoleBadgeHTML(role, large = false) {
     if (role === 'admin') return `<span class="sender-role-badge admin" style="${size}">⚙️ Admin</span>`;
     if (role === 'mod')   return `<span class="sender-role-badge mod" style="${size}">🛡️ Mod</span>`;
     return '';
-    // Note: group-admin and group-mod show as ⚙️ Admin / 🛡️ Mod since they use same roles
 }
 
 // ══ FIND USER BY USERNAME ════════════════════════
@@ -1312,60 +1276,29 @@ async function loadMembers() {
         const snap = await get(ref(db, 'users'));
         if (!snap.exists()) { list.innerHTML = ''; return; }
 
-        const isOfficialGroup = GROUP_ID === 'official_global';
-
-        // Load group-level roles (individual groups only)
-        const grSnap = isOfficialGroup ? null : await get(ref(db, `groups/${GROUP_ID}/roles`));
-        const grRoles = grSnap?.exists() ? grSnap.val() : {};
-
-        // Official group: owner/admin/mod/member
-        // Individual group: admin/mod/member ONLY — no owner section
-        const buckets = isOfficialGroup
-            ? { owner: [], admin: [], mod: [], member: [] }
-            : { admin: [], mod: [], member: [] };
-
+        const buckets = { owner: [], admin: [], mod: [], member: [] };
         let onlineCount = 0;
 
         snap.forEach(child => {
-            const uid = child.key;
-            const u   = child.val();
-            if (!u?.groups?.[GROUP_ID]) return;
-
-            let role;
-            if (isOfficialGroup) {
-                // Official: use app-level role
-                role = (uid === OWNER_UID) ? 'owner' : (u.role || 'member');
-            } else {
-                // Individual group:
-                // App admin/mod keep their badge but no "owner" label
-                if (['admin','mod'].includes(u.role)) role = u.role;
-                else if (grRoles[uid] === 'admin')   role = 'admin';
-                else if (grRoles[uid] === 'mod')     role = 'mod';
-                else                                 role = 'member';
-            }
-
+            const u = child.val();
+            if (!u?.groups?.[GROUP_ID]) return; // not in this group
+            const role = (child.key === OWNER_UID) ? 'owner' : (u.role || 'member');
             if (u.isOnline) onlineCount++;
-            if (buckets[role] !== undefined) buckets[role].push({ uid, ...u, role });
-            else buckets.member.push({ uid, ...u, role: 'member' });
+            buckets[role]?.push({ uid: child.key, ...u, role });
         });
 
+        // Update online count
         const oc = document.getElementById('onlineCount');
         if (oc) oc.textContent = onlineCount;
 
         list.innerHTML = '';
 
-        const sectionDefs = isOfficialGroup
-            ? [
-                { key: 'owner',  label: '👑 Owner' },
-                { key: 'admin',  label: '⚙️ Admins' },
-                { key: 'mod',    label: '🛡️ Moderators' },
-                { key: 'member', label: '👤 Members' },
-              ]
-            : [
-                { key: 'admin',  label: '⚙️ Admins' },
-                { key: 'mod',    label: '🛡️ Moderators' },
-                { key: 'member', label: '👤 Members' },
-              ];
+        const sectionDefs = [
+            { key: 'owner', label: '👑 Owner' },
+            { key: 'admin', label: '⚙️ Admins' },
+            { key: 'mod',   label: '🛡️ Moderators' },
+            { key: 'member',label: '👤 Members' },
+        ];
 
         sectionDefs.forEach(({ key, label }) => {
             if (!buckets[key].length) return;
@@ -1377,16 +1310,17 @@ async function loadMembers() {
             list.appendChild(sectionLabel);
 
             buckets[key].forEach(u => {
-                const initial    = (u.username || '?')[0].toUpperCase();
-                const roleBadge  = u.role !== 'member' ? getRoleBadgeHTML(u.role) : '';
-                const onlineDot  = u.isOnline ? '<div class="member-online-dot"></div>' : '';
-                const isAppOwner = u.uid === OWNER_UID;
-                const avBg       = isAppOwner ? 'linear-gradient(135deg,var(--accent),var(--accent2))' : '#1a1030';
+                const initial   = (u.username || '?')[0].toUpperCase();
+                const roleClass = { owner:'role-owner', admin:'role-admin', mod:'role-mod', member:'' }[u.role] || '';
+                const roleBadge = u.role !== 'member'
+                    ? `<span class="member-role ${roleClass}">${getRoleBadgeHTML(u.role)}</span>` : '';
+                const onlineDot = u.isOnline ? '<div class="member-online-dot"></div>' : '';
+                const isOwnerRow = u.uid === OWNER_UID;
 
                 const row = document.createElement('div');
                 row.className = 'member-row';
                 row.innerHTML = `
-                    <div class="member-av" style="background:${avBg};color:#fff;overflow:hidden;position:relative;">
+                    <div class="member-av" style="background:${isOwnerRow ? 'linear-gradient(135deg,var(--accent),var(--accent2))' : '#1a1030'};color:#fff;">
                         ${u.photoURL ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : initial}
                         ${onlineDot}
                     </div>
@@ -1400,7 +1334,7 @@ async function loadMembers() {
                     showUserProfile(u.username, u.age, u.khaw, initial, '#1a1030', u.role, u.photoURL || '');
                 row.querySelector(`#more-${u.uid}`).onclick = (e) => {
                     e.stopPropagation();
-                    if (!isAppOwner) openMemberOptions(e, u.username, u.role, u.uid);
+                    if (u.uid !== OWNER_UID) openMemberOptions(e, u.username, u.role);
                 };
                 list.appendChild(row);
             });
