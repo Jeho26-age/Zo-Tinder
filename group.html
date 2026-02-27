@@ -753,11 +753,11 @@
 
 <!-- FOOTER -->
 <footer class="footer">
-<button class="foot-btn" id="foot-home" onclick="window.location.href='home.html'">🔥<div class="foot-dot"></div></button>
-<button class="foot-btn" id="foot-store" onclick="window.location.href='store.html'">🛍️<div class="foot-dot"></div></button>
-<button class="foot-btn" id="foot-battle" onclick="window.location.href='photo-battle.html'">⚔️<div class="foot-dot"></div></button>
-<button class="foot-btn active" id="foot-groups">🪩<div class="foot-dot"></div></button>
-<button class="foot-btn" id="foot-profile" onclick="window.location.href='profile.html'">🪪<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-home" onclick="navigateTo('home')">🔥<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-store" onclick="navigateTo('store')">🛍️<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-battle" onclick="navigateTo('battle')">⚔️<div class="foot-dot"></div></button>
+    <button class="foot-btn active" id="foot-groups">🪩<div class="foot-dot"></div></button>
+    <button class="foot-btn" id="foot-profile" onclick="navigateTo('profile')">🪪<div class="foot-dot"></div></button>
 </footer>
 
 <!-- ══ CONTEXT MENU ══ -->
@@ -770,8 +770,10 @@
         <div class="sheet-option" onclick="doOption('read')"><span class="opt-icon">✅</span>Mark as Read</div>
         <div class="sheet-divider"></div>
         <div class="sheet-option" onclick="doOption('share')"><span class="opt-icon">🔗</span>Share Invite Link</div>
-        <div class="sheet-divider"></div>
-        <div class="sheet-option danger" onclick="doOption('leave')"><span class="opt-icon">🚪</span>Leave Group</div>
+        <div id="disbandContextSection" style="display:none;">
+            <div class="sheet-divider"></div>
+            <div class="sheet-option danger" id="disbandContextBtn" onclick="doOption('disband')"><span class="opt-icon">💥</span>Disband Group</div>
+        </div>
     </div>
 </div>
 
@@ -949,31 +951,51 @@ function clearSearch() {
 function openContext(card) {
     contextTarget = card;
     document.getElementById('contextName').textContent = card.dataset.name || 'Group';
+
+    // Show Disband only for group creator or app staff
+    const user     = typeof getCurrentUser     === 'function' ? getCurrentUser() : null;
+    const userData = typeof getCurrentUserData === 'function' ? getCurrentUserData() : null;
+    const createdBy  = card.dataset.createdBy || '';
+    const appRole    = userData?.role || 'member';
+    const isStaff    = ['owner','admin','mod'].includes(appRole);
+    const canDisband = user && (user.uid === createdBy || isStaff);
+    document.getElementById('disbandContextSection').style.display = canDisband ? '' : 'none';
+
     document.getElementById('contextOverlay').classList.add('show');
 }
 function closeContext() { document.getElementById('contextOverlay').classList.remove('show'); contextTarget = null; }
-function doOption(action) {
+async function doOption(action) {
+    const savedTarget = contextTarget;
     closeContext();
     if (action === 'mute')  showToast('🔇 Notifications muted');
     if (action === 'pin')   showToast('📌 Pinned to top');
-    if (action === 'share') showToast('🔗 Invite link copied!');
+    if (action === 'share') { navigator.clipboard?.writeText(window.location.origin + '/group-chat.html?id=' + (savedTarget?.dataset.id||'')); showToast('🔗 Invite link copied!'); }
     if (action === 'read') {
-        contextTarget && contextTarget.querySelector('.notif-badge')?.remove();
+        savedTarget?.querySelector('.notif-badge')?.remove();
         showToast('✅ Marked as read');
     }
-    if (action === 'leave') {
-        const groupId = contextTarget?.dataset.id;
-        if (contextTarget) {
-            contextTarget.style.transition = '0.3s';
-            contextTarget.style.opacity = '0';
-            contextTarget.style.transform = 'translateX(-20px)';
-            setTimeout(() => { contextTarget.remove(); }, 300);
+    if (action === 'disband') {
+        const groupId   = savedTarget?.dataset.id;
+        const groupName = savedTarget?.dataset.name || 'this group';
+        if (!groupId) return;
+        if (!confirm(`Disband "${groupName}" permanently?
+
+All messages, posts and member data will be deleted forever.`)) return;
+        if (typeof deleteGroupFirebase === 'function') {
+            showToast('💥 Disbanding...');
+            const ok = await deleteGroupFirebase(groupId);
+            if (ok) {
+                if (savedTarget) {
+                    savedTarget.style.transition = '0.35s';
+                    savedTarget.style.opacity = '0';
+                    savedTarget.style.transform = 'scale(0.9)';
+                    setTimeout(() => savedTarget.remove(), 350);
+                }
+                showToast('💥 Group disbanded');
+            } else {
+                showToast('❌ Failed to disband');
+            }
         }
-        // Tell group.js to remove from Firebase
-        if (groupId && typeof leaveGroupFirebase === 'function') {
-            leaveGroupFirebase(groupId);
-        }
-        showToast('🚪 Left group');
     }
 }
 

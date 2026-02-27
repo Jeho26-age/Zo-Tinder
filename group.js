@@ -177,27 +177,31 @@ function renderGroups(groups) {
 function createGroupCard(group, index) {
     const card = document.createElement('div');
     card.className = 'group-card';
-    card.dataset.cat = group.category || 'other';
-    card.dataset.name = group.name;
-    card.dataset.id = group.id;
+    card.dataset.cat       = group.category || 'other';
+    card.dataset.name      = group.name || '';
+    card.dataset.id        = group.id;
+    card.dataset.createdBy = group.createdBy || '';
     card.style.animationDelay = `${index * 0.04}s`;
 
-    const emoji = group.emoji || '💬';
-    const bg = categoryBg(group.category);
-    const lastMsg = group.lastMessage || 'Say hi to the group 👋';
+    const bg        = group.avatarURL ? '#1a1a1a' : categoryBg(group.category);
+    const avatarHTML = group.avatarURL
+        ? `<img src="${group.avatarURL}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`
+        : (group.emoji || '💬');
+    const lastMsg   = group.lastMessage || 'Say hi to the group 👋';
     const lastSender = group.lastSender || '';
-    const time = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
-    const unread = group.unread || 0;
-    const isOnline = group.onlineCount > 0;
+    const time      = group.lastMessageAt ? timeAgo(group.lastMessageAt) : '';
+    const unread    = group.unread || 0;
+    const isOnline  = group.onlineCount > 0;
+    const mc        = group.memberCount || 1;
 
     card.innerHTML = `
         <div class="avatar-wrap">
-            <div class="avatar-emoji" style="background:${bg};">${emoji}</div>
+            <div class="avatar-emoji" style="background:${bg};">${avatarHTML}</div>
             ${isOnline ? '<div class="online-dot"></div>' : ''}
         </div>
         <div class="group-info">
-            <div class="group-name">${escapeHtml(group.name)}</div>
-            <span class="member-info">↑ ${group.memberCount || 1} member${group.memberCount !== 1 ? 's' : ''}</span>
+            <div class="group-name">${escapeHtml(group.name || 'Group')}</div>
+            <span class="member-info">↑ ${mc} member${mc !== 1 ? 's' : ''}</span>
             <span class="last-msg">${lastSender ? `<em>${escapeHtml(lastSender)}:</em> ` : ''}${escapeHtml(lastMsg)}</span>
         </div>
         <div class="card-right">
@@ -206,24 +210,17 @@ function createGroupCard(group, index) {
         </div>
     `;
 
-    // Tap → open chat
     card.addEventListener('click', () => {
-        location.href = `group-chat.html?id=${group.id}&name=${encodeURIComponent(group.name)}`;
+        location.href = `group-chat.html?id=${group.id}&name=${encodeURIComponent(group.name||'Group')}`;
     });
 
-    // Long press → context menu
     let pressTimer;
     card.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => {
-            if (typeof openContext === 'function') openContext(card);
-        }, 600);
+        pressTimer = setTimeout(() => { if (typeof openContext === 'function') openContext(card); }, 600);
     });
     card.addEventListener('touchend', () => clearTimeout(pressTimer));
     card.addEventListener('touchmove', () => clearTimeout(pressTimer));
-    card.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        if (typeof openContext === 'function') openContext(card);
-    });
+    card.addEventListener('contextmenu', e => { e.preventDefault(); if (typeof openContext === 'function') openContext(card); });
 
     return card;
 }
@@ -245,13 +242,11 @@ window.saveGroupToFirebase = async function(name, category) {
         lastSender: currentUserData?.username || 'You',
         memberCount: 1,
         isPublic: true,
+        isPrivate: false,
         onlineCount: 0,
-        members: {
-            [currentUser.uid]: true
-        },
-        roles: {
-            [currentUser.uid]: 'groupAdmin'
-        }
+        members: { [currentUser.uid]: true },
+        // Creator is automatically group admin
+        roles:   { [currentUser.uid]: 'groupAdmin' },
     };
 
     try {
@@ -267,6 +262,32 @@ window.saveGroupToFirebase = async function(name, category) {
     } catch (err) {
         console.error('Error creating group:', err);
         return null;
+    }
+};
+
+// ── DELETE / DISBAND GROUP ────────────────────────
+window.deleteGroupFirebase = async function(groupId) {
+    if (!currentUser || !groupId) return false;
+    try {
+        await Promise.all([
+            set(ref(db, `groups/${groupId}`), null),
+            set(ref(db, `messages/${groupId}`), null),
+            set(ref(db, `posts/${groupId}`), null),
+        ]);
+        const usersSnap = await get(ref(db, 'users'));
+        if (usersSnap.exists()) {
+            const ops = [];
+            usersSnap.forEach(child => {
+                if (child.val()?.groups?.[groupId]) {
+                    ops.push(set(ref(db, `users/${child.key}/groups/${groupId}`), null));
+                }
+            });
+            await Promise.all(ops);
+        }
+        return true;
+    } catch (err) {
+        console.error('deleteGroupFirebase error:', err);
+        return false;
     }
 };
 

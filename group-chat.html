@@ -500,6 +500,9 @@
         .ban-dur-btn { padding:8px 14px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); font-size:13px; font-weight:700; color:#777; cursor:pointer; transition:0.2s; font-family:'Nunito',sans-serif; }
         .ban-dur-btn:active { transform:scale(0.93); }
         .ban-dur-btn.selected { background:rgba(255,62,29,0.15); border-color:var(--accent); color:var(--accent); }
+        .mute-dur-btn { padding:8px 14px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); font-size:13px; font-weight:700; color:#777; cursor:pointer; transition:0.2s; font-family:'Nunito',sans-serif; }
+        .mute-dur-btn:active { transform:scale(0.93); }
+        .mute-dur-btn.selected { background:rgba(255,62,29,0.15); border-color:var(--accent); color:var(--accent); }
 
         /* Member options section labels */
         .member-opt-section { font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#444; padding:10px 10px 4px; }
@@ -641,10 +644,10 @@
         <div class="sheet-option" onclick="doMsgAction('react')"><span class="opt-icon">❤️</span>React</div>
         <div class="sheet-option" onclick="doMsgAction('reply')"><span class="opt-icon">↩️</span>Reply</div>
         <div class="sheet-option" onclick="doMsgAction('copy')"><span class="opt-icon">📋</span>Copy</div>
-        <div class="sheet-option" onclick="doMsgAction('pin')"><span class="opt-icon">📌</span>Pin Message</div>
+        <div class="sheet-option" id="msgPinOpt" style="display:none;" onclick="doMsgAction('pin')"><span class="opt-icon">📌</span>Pin Message</div>
         <div class="sheet-divider"></div>
         <div class="sheet-option danger" id="msgDeleteOpt" onclick="doMsgAction('delete')"><span class="opt-icon">🗑️</span>Delete</div>
-        <div class="sheet-option danger" id="msgKickOpt" style="display:none;" onclick="doMsgAction('kick')"><span class="opt-icon">🚫</span>Remove User</div>
+        <div class="sheet-option danger" id="msgKickOpt" style="display:none;" onclick="doMsgAction('kick')"><span class="opt-icon">🚫</span>Remove from Group</div>
     </div>
 </div>
 
@@ -654,17 +657,16 @@
         <div class="sheet-handle"></div>
         <div class="sheet-title">Group Settings</div>
 
-        <div id="settingsAdminSection">
+        <!-- Admin-only options -->
+        <div class="admin-only-setting" style="display:none;">
             <div class="sheet-option" onclick="editGroupInfo()"><span class="opt-icon">✏️</span>Edit Group Info</div>
-            <div class="sheet-option" onclick="changeGroupAvatar()"><span class="opt-icon">🖼️</span>Change Avatar</div>
-
+            <div class="sheet-option" onclick="changeGroupAvatar()"><span class="opt-icon">🖼️</span>Change Icon</div>
             <div class="sheet-divider"></div>
-
-            <div class="settings-row" onclick="toggleReadMode()">
+            <div class="settings-row admin-only-setting" onclick="toggleReadMode()">
                 <div class="settings-left"><span class="s-icon">📢</span>Announcement Mode</div>
                 <div class="toggle" id="readModeToggle"></div>
             </div>
-            <div class="settings-row" onclick="togglePrivate()">
+            <div class="settings-row admin-only-setting" onclick="togglePrivate()">
                 <div class="settings-left"><span class="s-icon">🔒</span>Private Group</div>
                 <div class="toggle" id="privateToggle"></div>
             </div>
@@ -678,13 +680,23 @@
         <div class="sheet-divider"></div>
 
         <div class="sheet-option" onclick="showToast('🔗 Invite link copied!');closeSettings()"><span class="opt-icon">🔗</span>Copy Invite Link</div>
-        <div class="sheet-option" onclick="switchTab('members');closeSettings()"><span class="opt-icon">👥</span>Manage Members</div>
-        <div class="sheet-option" onclick="clearChat()"><span class="opt-icon">🗑️</span>Clear Chat</div>
+        <div class="sheet-option" onclick="switchTab('members');closeSettings()"><span class="opt-icon">👥</span>View Members</div>
+        <div class="sheet-option admin-only-setting" style="display:none;" onclick="clearChat()"><span class="opt-icon">🗑️</span>Clear Chat</div>
+
+        <!-- Ghost mode join (app staff only) -->
+        <div id="ghostJoinBtn" style="display:none;">
+            <div class="sheet-divider"></div>
+            <div class="sheet-option" onclick="joinFromGhost();closeSettings()" style="color:#a78bfa;"><span class="opt-icon">👁️</span>Join Group Visibly</div>
+        </div>
 
         <div class="sheet-divider" id="leaveGroupDivider"></div>
-        <!-- Leave group — hidden in official group -->
         <div class="sheet-option danger" id="leaveGroupBtn" onclick="leaveGroup()"><span class="opt-icon">🚪</span>Leave Group</div>
-        <div class="sheet-option danger" id="deleteGroupBtn" style="display:none;" onclick="deleteGroup()"><span class="opt-icon">💥</span>Delete Group</div>
+
+        <!-- Disband — app staff + group admin -->
+        <div id="disbandGroupBtn" style="display:none;">
+            <div class="sheet-divider"></div>
+            <div class="sheet-option danger" onclick="disbandGroup()" style="font-weight:900;"><span class="opt-icon">💥</span>Disband Group</div>
+        </div>
     </div>
 </div>
 
@@ -802,43 +814,26 @@
         <div class="member-opt-section">Profile</div>
         <div class="sheet-option" onclick="memberAction('profile')"><span class="opt-icon">👤</span>View Profile</div>
 
-        <div id="adminActionsSection">
-            <div class="member-opt-section">Admin Actions</div>
-            <div class="sheet-option" id="optMakeAdmin" onclick="memberAction('makeAdmin')"><span class="opt-icon">🏠</span>Make Group Admin</div>
-            <div class="sheet-option" id="optRemoveAdmin" style="display:none;" onclick="memberAction('removeAdmin')"><span class="opt-icon">⬇️</span>Remove Group Admin</div>
-            <div class="sheet-option" id="optAssignMod" onclick="memberAction('assignMod')"><span class="opt-icon">🔰</span>Make Group Moderator</div>
-            <div class="sheet-option" id="optRemoveMod" style="display:none;" onclick="memberAction('removeMod')"><span class="opt-icon">⬇️</span>Remove Group Moderator</div>
-            <div class="sheet-option" onclick="memberAction('mute')"><span class="opt-icon">🔇</span>Mute Member</div>
-            <div class="sheet-option" onclick="memberAction('unmute')"><span class="opt-icon">🔊</span>Lift Mute</div>
+        <!-- Group Admin Actions — only visible to group admin + app staff -->
+        <div id="groupAdminActionsSection" style="display:none;">
+            <div class="member-opt-section">Group Roles</div>
+            <div class="sheet-option" id="optMakeGroupAdmin" onclick="memberAction('makeGroupAdmin')"><span class="opt-icon">🏠</span>Make Group Admin</div>
+            <div class="sheet-option" id="optRemoveGroupAdmin" style="display:none;" onclick="memberAction('removeGroupAdmin')"><span class="opt-icon">⬇️</span>Remove Group Admin</div>
+            <div class="sheet-option" id="optMakeGroupMod" onclick="memberAction('makeGroupMod')"><span class="opt-icon">🔰</span>Make Group Mod</div>
+            <div class="sheet-option" id="optRemoveGroupMod" style="display:none;" onclick="memberAction('removeGroupMod')"><span class="opt-icon">⬇️</span>Remove Group Mod</div>
         </div>
 
-        <div id="modActionsSection">
+        <!-- Group Mod Actions — visible to group mod + -->
+        <div id="groupModActionsSection" style="display:none;">
             <div class="member-opt-section">Moderation</div>
-            <div class="sheet-option mod-action" onclick="memberAction('warn')"><span class="opt-icon">⚠️</span>Send Warning</div>
-            <div class="sheet-option mod-action" onclick="openTempBan()"><span class="opt-icon">⏱️</span>Temp Ban</div>
+            <div class="sheet-option" id="optMuteMember" onclick="memberAction('mute')"><span class="opt-icon">🔇</span>Mute Member</div>
+            <div class="sheet-option" id="optUnmuteMember" style="display:none;" onclick="memberAction('unmute')"><span class="opt-icon">🔊</span>Lift Mute</div>
         </div>
 
-        <div class="sheet-divider"></div>
-        <div class="sheet-option danger" onclick="memberAction('kick')"><span class="opt-icon">🚫</span>Remove from Group</div>
-    </div>
-</div>
-
-<!-- ══ MUTE MEMBER MODAL ══ -->
-<div class="overlay center" id="muteMemberOverlay" onclick="closeMuteMember(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-title">🔇 Mute Member</div>
-        <p style="font-size:13px;color:#555;margin-bottom:14px;">Select mute duration for <strong id="muteTargetName" style="color:white;">this user</strong></p>
-        <div class="ban-duration-row">
-            <div class="mute-dur-btn ban-dur-btn" onclick="selectMuteDur(this,5*60*1000)">5 Min</div>
-            <div class="mute-dur-btn ban-dur-btn selected" onclick="selectMuteDur(this,60*60*1000)">1 Hour</div>
-            <div class="mute-dur-btn ban-dur-btn" onclick="selectMuteDur(this,6*60*60*1000)">6 Hours</div>
-            <div class="mute-dur-btn ban-dur-btn" onclick="selectMuteDur(this,24*60*60*1000)">1 Day</div>
-            <div class="mute-dur-btn ban-dur-btn" onclick="selectMuteDur(this,3*24*60*60*1000)">3 Days</div>
-            <div class="mute-dur-btn ban-dur-btn" onclick="selectMuteDur(this,7*24*60*60*1000)">7 Days</div>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeMuteMember()">Cancel</button>
-            <button class="btn-confirm danger" onclick="confirmMuteMember()">Mute 🔇</button>
+        <!-- Kick — group admin+ only -->
+        <div id="kickSection" style="display:none;">
+            <div class="sheet-divider"></div>
+            <div class="sheet-option danger" onclick="memberAction('kick')"><span class="opt-icon">🚫</span>Remove from Group</div>
         </div>
     </div>
 </div>
@@ -886,6 +881,26 @@
         <div class="sheet-option" onclick="attachAction('camera')"><span class="opt-icon">📷</span>Take Photo</div>
         <div class="sheet-option" onclick="attachAction('video')"><span class="opt-icon">🎬</span>Video</div>
         <div class="sheet-option" onclick="attachAction('sticker')"><span class="opt-icon">🎭</span>Sticker</div>
+    </div>
+</div>
+
+<!-- ══ MUTE MEMBER MODAL ══ -->
+<div class="overlay center" id="muteMemberOverlay" onclick="closeMuteMember(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-title">🔇 Mute Member</div>
+        <p style="font-size:13px;color:#555;margin-bottom:14px;">Select mute duration for <strong id="muteTargetLabel" style="color:white;">User</strong></p>
+        <div class="ban-duration-row">
+            <div class="mute-dur-btn" onclick="selectMuteDur(this,5)">5 Min</div>
+            <div class="mute-dur-btn selected" onclick="selectMuteDur(this,60)">1 Hour</div>
+            <div class="mute-dur-btn" onclick="selectMuteDur(this,360)">6 Hours</div>
+            <div class="mute-dur-btn" onclick="selectMuteDur(this,1440)">1 Day</div>
+            <div class="mute-dur-btn" onclick="selectMuteDur(this,4320)">3 Days</div>
+            <div class="mute-dur-btn" onclick="selectMuteDur(this,10080)">7 Days</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeMuteMember()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmMuteMember()">Mute 🔇</button>
+        </div>
     </div>
 </div>
 
