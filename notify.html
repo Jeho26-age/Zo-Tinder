@@ -2,212 +2,535 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Zo-Chatbox | Notifications</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zo-Tinder | Notifications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* BASE STYLES */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        
-        body { 
-            background: #080808; 
-            color: white; 
+        /* ══ ROOT ══════════════════════════════════════════════ */
+        :root {
+            --accent:  #00f2ff;
+            --accent2: #a78bfa;
+            --gold:    #f5c842;
+            --danger:  #ff3e1d;
+            --bg:      #080808;
+            --panel:   #111117;
+            --panel2:  #18181f;
+            --border:  rgba(255,255,255,0.06);
+            --text:    #ffffff;
+            --sub:     #555;
+            --owner:   #f5c842;
+            --admin:   #ff3e1d;
+            --mod:     #a78bfa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
             height: 100dvh;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        /* HEADER */
-        .header { 
-            padding: 15px 20px; 
-            background: #0a0a0a; 
-            border-bottom: 1px solid #222; 
-            display: flex; 
-            align-items: center; 
-            gap: 15px;
+        /* ══ HEADER ════════════════════════════════════════════ */
+        .header {
+            padding: 52px 18px 0;
+            background: var(--bg);
+            flex-shrink: 0;
+            position: relative;
             z-index: 10;
         }
-        .back-btn { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; }
 
-        /* CONTENT AREA */
-        .content-area { 
-            padding: 15px; 
-            overflow-y: auto; 
-            background: linear-gradient(to bottom, #0d0d0d, #080808);
-        }
-        .section-title { 
-            font-size: 0.75rem; 
-            color: #ff4b2b; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            margin: 20px 0 12px 5px; 
-            letter-spacing: 1.5px; 
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
         }
 
-        /* FOLLOW REQUEST CARDS */
-        .follow-card {
-            background: #121212;
-            border-radius: 16px;
-            padding: 12px;
+        .header-left {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #1f1f1f;
-            transition: transform 0.2s;
         }
-        .follow-card:active { transform: scale(0.98); }
-        
-        .user-img { 
-            width: 55px; 
-            height: 55px; 
-            border-radius: 50%; 
-            object-fit: cover; 
-            border: 2px solid #ff4b2b; 
-        }
-        
-        .user-info { flex: 1; overflow: hidden; }
-        .user-name { font-size: 0.95rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .user-loc { font-size: 0.7rem; color: #888; margin-top: 2px; }
-        
-        .action-btns { display: flex; gap: 8px; }
-        .btn-small { 
-            padding: 8px 14px; 
-            border-radius: 20px; 
-            border: none; 
-            font-size: 0.7rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: opacity 0.2s;
-        }
-        .btn-follow-back { background: #ff4b2b; color: white; }
-        .btn-view { background: #252525; color: white; }
 
-        /* LIKE NOTIFICATIONS */
-        .like-item {
-            padding: 15px 10px;
-            border-bottom: 1px solid #181818;
-            font-size: 0.85rem;
-            color: #ccc;
+        .back-btn {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; color: white;
+            text-decoration: none; transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.12); }
+
+        .header-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .clear-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(255,62,29,0.25);
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px; font-weight: 900;
+            color: var(--danger);
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
+            display: none;
+        }
+        .clear-btn.show { display: block; }
+        .clear-btn:active { background: rgba(255,62,29,0.08); transform: scale(0.96); }
+
+        /* ══ TAB BAR ════════════════════════════════════════════ */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1; padding: 12px 0;
+            text-align: center;
+            font-size: 12px; font-weight: 900;
+            color: var(--sub); cursor: pointer;
+            position: relative; transition: color 0.2s;
+            border: none; background: none;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .tab.active { color: var(--accent); }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 20%; right: 20%;
+            height: 2px; background: var(--accent); border-radius: 2px;
+        }
+
+        .tab-badge {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            background: var(--danger); color: white;
+            font-size: 9px; font-weight: 900;
+            min-width: 16px; height: 16px;
+            border-radius: 8px; padding: 0 4px;
+            margin-left: 5px; vertical-align: middle;
+        }
+
+        /* ══ CONTENT ════════════════════════════════════════════ */
+        .content {
+            flex: 1; overflow-y: auto; scrollbar-width: none;
+            padding-bottom: 30px;
+        }
+        .content::-webkit-scrollbar { display: none; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ══ SECTION LABEL ══════════════════════════════════════ */
+        .section-label {
+            font-size: 10px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 2px;
+            color: #2a2a2a; padding: 16px 18px 6px;
+        }
+
+        /* ══ NOTIFICATION ROW ═══════════════════════════════════ */
+        .notif-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 13px 18px;
+            cursor: pointer;
+            transition: background 0.15s;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+        .notif-row:active { background: rgba(255,255,255,0.03); }
+
+        /* Unread highlight */
+        .notif-row.unread {
+            background: rgba(0,242,255,0.025);
+        }
+        .notif-row.unread::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--accent);
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* ── Avatar wrap ── */
+        .notif-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+            width: 48px; height: 48px;
+        }
+
+        .notif-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--panel2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            border: 2px solid var(--bg);
+            overflow: hidden;
+        }
+
+        .notif-avatar img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+        }
+
+        /* Type icon badge on avatar */
+        .notif-type-icon {
+            position: absolute;
+            bottom: -2px; right: -2px;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px;
+        }
+
+        .notif-type-icon.follow     { background: #1a3a4a; }
+        .notif-type-icon.like       { background: #3a1a1a; }
+        .notif-type-icon.message    { background: #1a2a3a; }
+        .notif-type-icon.battle     { background: #3a2a1a; }
+        .notif-type-icon.leaderboard{ background: #2a3a1a; }
+        .notif-type-icon.mod        { background: #2a1a3a; }
+        .notif-type-icon.system     { background: #1a1a3a; }
+
+        /* ── Info ── */
+        .notif-info { flex: 1; min-width: 0; }
+
+        .notif-text {
+            font-size: 13px; font-weight: 700;
+            line-height: 1.45; color: #aaa;
+            margin-bottom: 4px;
+        }
+        .notif-row.unread .notif-text { color: white; }
+
+        .notif-text strong {
+            color: white; font-weight: 900;
+        }
+        .notif-row.unread .notif-text strong { color: var(--accent); }
+
+        .notif-time {
+            font-size: 11px; color: var(--sub);
+            font-weight: 700;
+        }
+
+        /* ── Battle card inside notification ── */
+        .battle-result-card {
+            margin-top: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .battle-result-top {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
         }
-        .like-item:active { background: #111; }
-        .like-item b { color: #fff; font-weight: 600; }
-        .heart-icon { color: #ff4b2b; font-size: 1rem; }
 
-        /* POP-UP PROFILE MODAL */
-        #profileModal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            justify-content: center;
+        .battle-result-label {
+            font-size: 10px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--sub);
+        }
+
+        .battle-result-badge {
+            font-size: 11px; font-weight: 900;
+            padding: 3px 10px; border-radius: 20px;
+        }
+        .battle-result-badge.win  { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid rgba(0,230,118,0.3); }
+        .battle-result-badge.loss { background: rgba(255,62,29,0.15);  color: var(--danger); border: 1px solid rgba(255,62,29,0.25); }
+        .battle-result-badge.draw { background: rgba(255,255,255,0.08); color: #888; border: 1px solid var(--border); }
+
+        .battle-scores {
+            display: flex;
             align-items: center;
-            padding: 25px;
-            backdrop-filter: blur(5px);
-        }
-        .modal-card {
-            background: #181818;
-            width: 100%;
-            max-width: 320px;
-            border-radius: 24px;
-            overflow: hidden;
-            border: 1px solid #333;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes modalPop {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .modal-img { width: 100%; height: 280px; object-fit: cover; }
-        .modal-content { padding: 20px; text-align: center; }
-        .modal-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-        .modal-bio { font-size: 0.8rem; color: #aaa; margin: 10px 0; line-height: 1.4; }
-        
-        .modal-actions { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            margin-top: 20px; 
-        }
-        .btn-modal { 
-            padding: 12px; 
-            border-radius: 12px; 
-            border: none; 
-            font-weight: bold; 
-            font-size: 0.9rem; 
-            cursor: pointer; 
+            gap: 8px;
         }
 
-        /* FOOTER */
-        .footer { 
-            display: flex; 
-            justify-content: space-around; 
+        .battle-score-side {
+            flex: 1; text-align: center;
+        }
+
+        .battle-score-name {
+            font-size: 11px; color: var(--sub); font-weight: 800;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .battle-score-num {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.6rem; letter-spacing: 1px;
+        }
+        .battle-score-num.mine { color: var(--accent); }
+        .battle-score-num.theirs { color: #444; }
+
+        .battle-vs {
+            font-size: 11px; font-weight: 900; color: #333;
+            flex-shrink: 0;
+        }
+
+        .battle-rank-row {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .battle-rank-label { font-size: 11px; color: var(--sub); font-weight: 700; }
+        .battle-rank-val {
+            font-size: 12px; font-weight: 900;
+            color: var(--gold);
+        }
+
+        /* ── Leaderboard card ── */
+        .leaderboard-card {
+            margin-top: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
             align-items: center;
-            height: 70px; 
-            background: #0a0a0a; 
-            border-top: 1px solid #222; 
-            padding-bottom: env(safe-area-inset-bottom);
+            gap: 12px;
         }
-        .foot-btn { background: none; border: none; color: #444; font-size: 1.4rem; cursor: pointer; }
-        .foot-btn.active { color: #ff4b2b; }
 
-        /* EMPTY STATE */
-        .empty-msg {
-            text-align: center;
-            color: #555;
-            margin-top: 50px;
-            font-size: 0.9rem;
+        .leaderboard-rank-big {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem; letter-spacing: 1px;
+            flex-shrink: 0;
         }
+        .leaderboard-rank-big.gold   { color: var(--gold); }
+        .leaderboard-rank-big.silver { color: #aaa; }
+        .leaderboard-rank-big.bronze { color: #cd7f32; }
+        .leaderboard-rank-big.normal { color: var(--accent); }
+
+        .leaderboard-info-label { font-size: 12px; font-weight: 900; }
+        .leaderboard-info-sub   { font-size: 11px; color: var(--sub); font-weight: 700; }
+
+        /* ── System / mod notification ── */
+        .system-card {
+            margin-top: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 14px;
+            font-size: 12px; font-weight: 700;
+            color: var(--sub); line-height: 1.5;
+        }
+
+        /* ── Follow back button ── */
+        .follow-back-btn {
+            margin-top: 10px;
+            padding: 9px 18px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent);
+            color: #000;
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px; font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .follow-back-btn:active { transform: scale(0.95); }
+        .follow-back-btn.following {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--sub);
+        }
+
+        /* ══ EMPTY STATE ════════════════════════════════════════ */
+        .empty-state {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 70px 30px; gap: 14px;
+        }
+        .empty-state .e-icon { font-size: 3rem; opacity: 0.2; }
+        .empty-state p {
+            font-size: 14px; color: var(--sub);
+            text-align: center; line-height: 1.6;
+        }
+
+        /* ══ LOADING ════════════════════════════════════════════ */
+        #loadingOverlay {
+            position: fixed; inset: 0; background: var(--bg);
+            z-index: 9998; display: flex;
+            align-items: center; justify-content: center;
+            transition: opacity 0.3s;
+        }
+        .loader-ring {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ══ TOAST ══════════════════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px 20px; border-radius: 14px;
+            font-size: 13px; font-weight: 700; opacity: 0;
+            transition: all 0.3s; z-index: 9999;
+            white-space: nowrap; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ══ CONFIRM CLEAR SHEET ════════════════════════════════ */
+        .overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            z-index: 500; align-items: flex-end; justify-content: center;
+        }
+        .overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+        .sheet {
+            background: #16161f;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 24px 24px 0 0;
+            padding: 20px 20px 48px;
+            width: 100%; max-width: 480px;
+            animation: sheetUp 0.25s ease;
+        }
+        @keyframes sheetUp { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+        .sheet-handle { width:36px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin:0 auto 20px; }
+        .sheet-title  { font-size:17px; font-weight:900; margin-bottom:8px; }
+        .sheet-sub    { font-size:13px; color:var(--sub); font-weight:700; margin-bottom:20px; line-height:1.5; }
+
+        .sheet-btns { display:flex; flex-direction:column; gap:10px; }
+
+        .sheet-btn {
+            width:100%; padding:14px;
+            border-radius:14px; border:none;
+            font-family:'Nunito', sans-serif;
+            font-size:15px; font-weight:900;
+            cursor:pointer; transition:transform 0.15s;
+        }
+        .sheet-btn:active { transform:scale(0.97); }
+        .sheet-btn.danger  { background:var(--danger); color:white; }
+        .sheet-btn.cancel  { background:rgba(255,255,255,0.06); color:var(--sub); border:1px solid var(--border); }
     </style>
 </head>
 <body>
-    <header class="header">
-        <button class="back-btn" onclick="location.href='home.html'">✕</button>
-        <h2 style="font-size: 1rem; letter-spacing: 0.5px;">NOTIFICATIONS</h2>
-    </header>
 
-    <main class="content-area">
-        <div id="followSection">
-            <p class="section-title">New Followers</p>
-            <div id="followList">
-                </div>
+<!-- ══ LOADING ══ -->
+<div id="loadingOverlay"><div class="loader-ring"></div></div>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+    <div class="header-top">
+        <div class="header-left">
+            <a href="home.html" class="back-btn">←</a>
+            <div class="header-title">Notifications</div>
         </div>
+        <button class="clear-btn" id="clearBtn">🗑️ Clear All</button>
+    </div>
 
-        <div id="likeSection">
-            <p class="section-title">Recent Activity</p>
-            <div id="likeList">
-                </div>
-        </div>
-    </main>
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" id="tab-all"          onclick="switchTab('all')">All <span class="tab-badge" id="badge-all" style="display:none;"></span></button>
+        <button class="tab"        id="tab-social"       onclick="switchTab('social')">👥 Social</button>
+        <button class="tab"        id="tab-battle"       onclick="switchTab('battle')">⚔️ Battle</button>
+        <button class="tab"        id="tab-system"       onclick="switchTab('system')">🔔 System</button>
+    </div>
+</div>
 
-    <div id="profileModal" onclick="this.style.display='none'">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <img src="" id="modalPhoto" class="modal-img">
-            <div class="modal-content">
-                <div id="modalName" class="modal-name"></div>
-                <div id="modalBio" class="modal-bio"></div>
-                
-                <div class="modal-actions">
-                    <button class="btn-modal btn-follow-back" id="modalFollowBtn">Follow Back</button>
-                    <button class="btn-modal btn-view" id="modalViewBtn">Full Profile</button>
-                </div>
-            </div>
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+    <!-- ALL TAB -->
+    <div class="tab-panel active" id="panel-all">
+        <div id="list-all"></div>
+        <div class="empty-state" id="empty-all" style="display:none;">
+            <div class="e-icon">🔔</div>
+            <p>No notifications yet.<br>We'll let you know when something happens!</p>
         </div>
     </div>
 
-    <footer class="footer">
-        <button class="foot-btn" onclick="location.href='home.html'">🔥</button>
-        <button class="foot-btn" onclick="location.href='store.html'">💎</button>
-        <button class="foot-btn" onclick="location.href='photo-battle.html'">⚔️</button>
-        <button class="foot-btn active" onclick="location.href='notify.html'">💬</button>
-        <button class="foot-btn" onclick="location.href='profile.html'">👤</button>
-    </footer>
+    <!-- SOCIAL TAB -->
+    <div class="tab-panel" id="panel-social">
+        <div id="list-social"></div>
+        <div class="empty-state" id="empty-social" style="display:none;">
+            <div class="e-icon">👥</div>
+            <p>No social notifications yet.</p>
+        </div>
+    </div>
 
-    <script type="module" src="notify.js"></script>
+    <!-- BATTLE TAB -->
+    <div class="tab-panel" id="panel-battle">
+        <div id="list-battle"></div>
+        <div class="empty-state" id="empty-battle" style="display:none;">
+            <div class="e-icon">⚔️</div>
+            <p>No battle notifications yet.<br>Join a battle to get started!</p>
+        </div>
+    </div>
+
+    <!-- SYSTEM TAB -->
+    <div class="tab-panel" id="panel-system">
+        <div id="list-system"></div>
+        <div class="empty-state" id="empty-system" style="display:none;">
+            <div class="e-icon">🔔</div>
+            <p>No system notifications.</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══ CONFIRM CLEAR SHEET ══ -->
+<div class="overlay" id="clearOverlay">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Clear All Notifications?</div>
+        <div class="sheet-sub">This will permanently delete all your notifications. This cannot be undone.</div>
+        <div class="sheet-btns">
+            <button class="sheet-btn danger" id="confirmClearBtn">🗑️ Clear All</button>
+            <button class="sheet-btn cancel" id="cancelClearBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // ── Tab switching ──
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-' + tab)?.classList.add('active');
+        document.getElementById('panel-' + tab)?.classList.add('active');
+    }
+
+    // ── Clear sheet ──
+    document.getElementById('clearBtn')?.addEventListener('click', () => {
+        document.getElementById('clearOverlay').classList.add('open');
+    });
+    document.getElementById('cancelClearBtn')?.addEventListener('click', () => {
+        document.getElementById('clearOverlay').classList.remove('open');
+    });
+    document.getElementById('clearOverlay')?.addEventListener('click', (e) => {
+        if (e.target.id === 'clearOverlay') document.getElementById('clearOverlay').classList.remove('open');
+    });
+</script>
+
+<script type="module" src="notify.js"></script>
 </body>
 </html>

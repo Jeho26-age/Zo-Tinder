@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zo-Tinder | Following</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ══ ROOT ══════════════════════════════════════════════ */
+        :root {
+            --accent:  #00f2ff;
+            --accent2: #a78bfa;
+            --gold:    #f5c842;
+            --danger:  #ff3e1d;
+            --bg:      #080808;
+            --panel:   #111117;
+            --panel2:  #18181f;
+            --border:  rgba(255,255,255,0.06);
+            --text:    #ffffff;
+            --sub:     #555;
+            --owner:   #f5c842;
+            --admin:   #ff3e1d;
+            --mod:     #a78bfa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ══ HEADER ════════════════════════════════════════════ */
+        .header {
+            padding: 52px 18px 14px;
+            background: var(--bg);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .back-btn {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; color: white;
+            text-decoration: none; transition: background 0.15s; flex-shrink: 0;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.12); }
+
+        .header-title-wrap { flex: 1; min-width: 0; }
+
+        .header-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.6rem; letter-spacing: 1.5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .header-count {
+            font-size: 12px; color: var(--sub); font-weight: 700; margin-top: 1px;
+        }
+
+        /* ══ SEARCH ═════════════════════════════════════════════ */
+        .search-wrap {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px;
+            transition: border-color 0.2s;
+        }
+        .search-wrap:focus-within { border-color: rgba(0,242,255,0.3); }
+
+        .search-wrap input {
+            flex: 1; background: none; border: none; outline: none;
+            color: var(--text); font-family: 'Nunito', sans-serif;
+            font-size: 14px; font-weight: 600;
+        }
+        .search-wrap input::placeholder { color: var(--sub); }
+
+        .search-clear {
+            font-size: 14px; color: var(--sub);
+            cursor: pointer; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+        }
+        .search-clear.visible { opacity: 1; pointer-events: auto; }
+
+        /* ══ CONTENT ════════════════════════════════════════════ */
+        .content {
+            flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: 30px;
+        }
+        .content::-webkit-scrollbar { display: none; }
+
+        /* ══ PEOPLE ROW ═════════════════════════════════════════ */
+        .people-row {
+            display: flex; align-items: center; gap: 13px;
+            padding: 13px 18px; cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--border);
+        }
+        .people-row:active { background: rgba(255,255,255,0.03); }
+
+        /* ── Avatar + Frame ── */
+        .people-avatar-wrap {
+            position: relative; flex-shrink: 0;
+            width: 54px; height: 54px;
+        }
+
+        .people-avatar {
+            width: 54px; height: 54px; border-radius: 50%;
+            object-fit: cover; background: var(--panel2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; position: relative; z-index: 3;
+            border: 2px solid var(--bg); overflow: hidden;
+        }
+        .people-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+        .people-frame {
+            position: absolute; top:50%; left:50%;
+            width: 62px; height: 62px; border-radius: 50%;
+            transform: translate(-50%,-50%);
+            z-index: 2; pointer-events: none;
+        }
+
+        /* Frame classes */
+        .cf-none   .people-frame { display:none; }
+        .cf-owner  .people-frame { background:conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842,#fff176,#f5c842); padding:2px; animation:cf-spin 3s linear infinite; box-shadow:0 0 10px rgba(245,200,66,0.5); }
+        .cf-owner  .people-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .cf-admin  .people-frame { background:conic-gradient(#ff3e1d,#ff6b00,#ff3e1d,#ff0060,#ff3e1d); padding:2px; animation:cf-spin 2s linear infinite; box-shadow:0 0 10px rgba(255,62,29,0.5); }
+        .cf-admin  .people-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .cf-mod    .people-frame { border:2px solid var(--accent2); box-shadow:0 0 8px rgba(167,139,250,0.5); animation:cf-spin 5s linear infinite; }
+        .cf-default .people-frame { border:2px solid var(--accent); box-shadow:0 0 8px rgba(0,242,255,0.4); animation:cf-spin 4s linear infinite; }
+        .cf-fire   .people-frame { background:conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:2px; animation:cf-spin 1.5s linear infinite; box-shadow:0 0 10px rgba(255,69,0,0.6); }
+        .cf-fire   .people-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .cf-aurora .people-frame { background:conic-gradient(#00f2ff,#a78bfa,#00ff88,#ff6bff,#00f2ff); padding:2px; animation:cf-spin 6s linear infinite; box-shadow:0 0 10px rgba(0,242,255,0.4); }
+        .cf-aurora .people-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .cf-galaxy .people-frame { border:2px solid transparent; background:linear-gradient(var(--bg),var(--bg)) padding-box, conic-gradient(#4a00e0,#8e2de2,#00c9ff,#4a00e0) border-box; animation:cf-spin 8s linear infinite; box-shadow:0 0 10px rgba(74,0,224,0.4); }
+
+        @keyframes cf-spin { from { transform:translate(-50%,-50%) rotate(0deg); } to { transform:translate(-50%,-50%) rotate(360deg); } }
+
+        /* ── Info ── */
+        .people-info { flex: 1; min-width: 0; }
+
+        .people-name {
+            font-size: 14px; font-weight: 900;
+            display: flex; align-items: center; gap: 6px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .staff-badge {
+            font-size: 9px; font-weight: 900;
+            padding: 2px 6px; border-radius: 8px;
+            text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0;
+        }
+        .staff-badge.owner { background:rgba(245,200,66,0.15); color:var(--owner); border:1px solid rgba(245,200,66,0.3); }
+        .staff-badge.admin { background:rgba(255,62,29,0.15);  color:var(--admin); border:1px solid rgba(255,62,29,0.3);  }
+        .staff-badge.mod   { background:rgba(167,139,250,0.15);color:var(--mod);   border:1px solid rgba(167,139,250,0.3);}
+
+        /* ── Follow button (only on own page) ── */
+        .follow-btn {
+            flex-shrink: 0;
+            padding: 8px 18px; border-radius: 12px; border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px; font-weight: 900;
+            cursor: pointer; transition: transform 0.15s;
+            display: none;
+        }
+        .follow-btn.show { display: block; }
+        .follow-btn:active { transform: scale(0.95); }
+        .follow-btn.state-follow   { background: var(--accent); color: #000; }
+        .follow-btn.state-unfollow { background: transparent; color: var(--sub); border: 1px solid rgba(255,255,255,0.12); }
+
+        /* ══ EMPTY STATE ════════════════════════════════════════ */
+        .empty-state {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 70px 30px; gap: 14px;
+        }
+        .empty-state .e-icon { font-size: 3rem; opacity: 0.2; }
+        .empty-state p { font-size: 14px; color: var(--sub); text-align: center; line-height: 1.6; }
+
+        /* ══ AVATAR POPUP ═══════════════════════════════════════ */
+        .avatar-popup {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 600; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .avatar-popup.open { display: flex; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+        .popup-card {
+            background: #16161f;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; padding: 28px 24px;
+            width: calc(100% - 48px); max-width: 320px;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 10px;
+            position: relative; animation: popIn 0.2s ease;
+        }
+        @keyframes popIn { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
+
+        .popup-close {
+            position: absolute; top: 14px; right: 14px;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: none; color: #555; font-size: 15px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        .popup-avatar-wrap {
+            position: relative; width: 80px; height: 80px; margin-bottom: 4px;
+        }
+
+        .popup-avatar-img {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: var(--panel2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; position: relative; z-index: 3;
+            border: 2px solid var(--bg); overflow: hidden;
+        }
+        .popup-avatar-img img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+        .popup-frame {
+            position: absolute; top:50%; left:50%;
+            width: 90px; height: 90px; border-radius: 50%;
+            transform: translate(-50%,-50%);
+            z-index: 2; pointer-events: none;
+        }
+
+        .cf-owner  .popup-frame { background:conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842); padding:2px; animation:cf-spin 3s linear infinite; box-shadow:0 0 12px rgba(245,200,66,0.5); }
+        .cf-owner  .popup-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:#16161f; }
+        .cf-admin  .popup-frame { background:conic-gradient(#ff3e1d,#ff6b00,#ff3e1d); padding:2px; animation:cf-spin 2s linear infinite; box-shadow:0 0 12px rgba(255,62,29,0.5); }
+        .cf-admin  .popup-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:#16161f; }
+        .cf-mod    .popup-frame { border:2px solid var(--accent2); box-shadow:0 0 10px rgba(167,139,250,0.5); animation:cf-spin 5s linear infinite; }
+        .cf-default .popup-frame { border:2px solid var(--accent); box-shadow:0 0 10px rgba(0,242,255,0.4); animation:cf-spin 4s linear infinite; }
+        .cf-fire   .popup-frame { background:conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:2px; animation:cf-spin 1.5s linear infinite; }
+        .cf-fire   .popup-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:#16161f; }
+        .cf-aurora .popup-frame { background:conic-gradient(#00f2ff,#a78bfa,#00ff88,#ff6bff,#00f2ff); padding:2px; animation:cf-spin 6s linear infinite; }
+        .cf-aurora .popup-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:#16161f; }
+        .cf-galaxy .popup-frame { border:2px solid transparent; background:linear-gradient(#16161f,#16161f) padding-box, conic-gradient(#4a00e0,#8e2de2,#00c9ff,#4a00e0) border-box; animation:cf-spin 8s linear infinite; }
+        .cf-none   .popup-frame { display:none; }
+
+        .popup-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem; letter-spacing: 1px; text-align: center;
+        }
+
+        .popup-role-badge {
+            display: none; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .popup-role-badge.owner { display:inline-flex; background:rgba(245,200,66,0.15); color:var(--owner); border:1px solid rgba(245,200,66,0.3); }
+        .popup-role-badge.admin { display:inline-flex; background:rgba(255,62,29,0.15);  color:var(--admin); border:1px solid rgba(255,62,29,0.3);  }
+        .popup-role-badge.mod   { display:inline-flex; background:rgba(167,139,250,0.15);color:var(--mod);   border:1px solid rgba(167,139,250,0.3);}
+
+        .popup-actions { display:flex; flex-direction:column; gap:10px; width:100%; margin-top:6px; }
+
+        .popup-btn {
+            width:100%; padding:13px; border-radius:14px; border:none;
+            font-family:'Nunito', sans-serif; font-size:14px; font-weight:900;
+            cursor:pointer; transition:transform 0.15s;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .popup-btn:active { transform:scale(0.97); }
+        .popup-btn.follow-state   { background:var(--accent); color:#000; }
+        .popup-btn.unfollow-state { background:transparent; color:var(--sub); border:1.5px solid rgba(255,255,255,0.12); }
+        .popup-btn.view-btn       { background:var(--panel); color:var(--text); border:1px solid var(--border); }
+
+        /* ══ LOADING ════════════════════════════════════════════ */
+        #loadingOverlay {
+            position: fixed; inset: 0; background: var(--bg);
+            z-index: 9998; display: flex;
+            align-items: center; justify-content: center;
+            transition: opacity 0.3s;
+        }
+        .loader-ring {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* ══ TOAST ══════════════════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px 20px; border-radius: 14px;
+            font-size: 13px; font-weight: 700; opacity: 0;
+            transition: all 0.3s; z-index: 9999;
+            white-space: nowrap; pointer-events: none;
+        }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- ══ LOADING ══ -->
+<div id="loadingOverlay"><div class="loader-ring"></div></div>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+    <div class="header-top">
+        <a href="javascript:history.back()" class="back-btn">←</a>
+        <div class="header-title-wrap">
+            <div class="header-title" id="headerTitle">Following</div>
+            <div class="header-count" id="headerCount"></div>
+        </div>
+    </div>
+
+    <div class="search-wrap">
+        <span style="opacity:0.35; font-size:16px;">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search following...">
+        <span class="search-clear" id="searchClear">✕</span>
+    </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+    <div id="peopleList"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="e-icon">👣</div>
+        <p id="emptyText">Not following anyone yet.</p>
+    </div>
+</div>
+
+<!-- ══ AVATAR POPUP ══ -->
+<div class="avatar-popup" id="avatarPopup">
+    <div class="popup-card">
+        <button class="popup-close" id="popupClose">✕</button>
+
+        <div class="popup-avatar-wrap cf-none" id="popupAvatarWrap">
+            <div class="popup-avatar-img" id="popupAvatarImg"></div>
+            <div class="popup-frame"></div>
+        </div>
+
+        <div class="popup-name" id="popupName"></div>
+        <div class="popup-role-badge" id="popupRoleBadge"></div>
+
+        <div class="popup-actions">
+            <button class="popup-btn follow-state" id="popupFollowBtn">➕ Follow</button>
+            <button class="popup-btn view-btn"     id="popupViewBtn">👤 View Profile</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // Search
+    const searchInput = document.getElementById('searchInput');
+    const searchClear = document.getElementById('searchClear');
+
+    searchInput?.addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        searchClear.classList.toggle('visible', q.length > 0);
+        document.querySelectorAll('.people-row').forEach(row => {
+            const name = (row.dataset.name || '').toLowerCase();
+            row.style.display = (!q || name.includes(q)) ? '' : 'none';
+        });
+    });
+
+    searchClear?.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.classList.remove('visible');
+        document.querySelectorAll('.people-row').forEach(r => r.style.display = '');
+    });
+
+    // Popup close
+    document.getElementById('popupClose')?.addEventListener('click', () => {
+        document.getElementById('avatarPopup').classList.remove('open');
+    });
+    document.getElementById('avatarPopup')?.addEventListener('click', (e) => {
+        if (e.target.id === 'avatarPopup') document.getElementById('avatarPopup').classList.remove('open');
+    });
+</script>
+
+<script type="module" src="user-people.js"></script>
+</body>
+</html>
