@@ -88,16 +88,23 @@ function formatDateLabel(ts) {
 
 function getFrameClass(uid, data, prefix = 'hf') {
     const role = (uid === OWNER_UID) ? 'owner' : (data?.role || 'member');
+    // Owner frame is UID-locked — always gold
     if (role === 'owner') return `${prefix}-owner`;
-    if (role === 'admin') return `${prefix}-admin`;
-    if (role === 'mod')   return `${prefix}-mod`;
+    // Equipped frame takes priority over role-based frame
     const eq = data?.equippedFrame || '';
     if (eq) return `${prefix}-${eq.replace('frame-', '')}`;
+    // Fall back to role frame if nothing equipped
+    if (role === 'admin') return `${prefix}-admin`;
+    if (role === 'mod')   return `${prefix}-mod`;
     return `${prefix}-none`;
 }
 
-function getBubbleStyle(data) {
-    return data?.equippedBubble || 'bs-default';
+function getBubbleStyle(data, uid) {
+    // App owner always gets the owner bubble, UID-locked — cannot be equipped by others
+    if (uid && uid === OWNER_UID) return 'bubble-owner';
+    // Block anyone else from equipping bubble-owner
+    const equipped = data?.equippedBubble || 'bs-default';
+    return equipped === 'bubble-owner' ? 'bs-default' : equipped;
 }
 
 // ── AUTH + INIT ────────────────────────────────────────────────────────────
@@ -146,8 +153,8 @@ onAuthStateChanged(auth, async (user) => {
         }
 
         // Bubble styles
-        myBubbleStyle    = getBubbleStyle(myData);
-        theirBubbleStyle = getBubbleStyle(targetData);
+        myBubbleStyle    = getBubbleStyle(myData,     myUID);
+        theirBubbleStyle = getBubbleStyle(targetData, targetUID);
 
         // Chat ID
         chatID = getChatID(myUID, targetUID);
@@ -182,6 +189,8 @@ onAuthStateChanged(auth, async (user) => {
         setupSearch();
         setupCallButtons();
         setupMsgOptionsSheet();
+        setupTypingIndicator();
+        setupThemeToggle();
 
         // Start listening to messages
         listenMessages();
@@ -398,19 +407,8 @@ function buildMessageRow(msgID, msg, isMine) {
     row.className = `msg-row ${isMine ? 'mine' : ''} ${bubbleStyle}`;
     row.dataset.msgid = msgID;
 
-    // Avatar (only for their messages)
+    // Build message row — no avatar, pure bubbles
     let avatarHTML = '';
-    if (!isMine) {
-        const fc = getFrameClass(targetUID, targetData, 'mf');
-        const imgSrc = targetData.photoURL
-            ? `<img class="msg-avatar-img" src="${esc(targetData.photoURL)}" style="display:block;">`
-            : `<div class="msg-avatar-img">${esc(targetData.username?.[0]||'?')}</div>`;
-        avatarHTML = `
-            <div class="msg-avatar-wrap ${fc}">
-                ${imgSrc}
-                <div class="msg-frame"></div>
-            </div>`;
-    }
 
     // Bubble content
     let bubbleInner = '';
@@ -434,22 +432,21 @@ function buildMessageRow(msgID, msg, isMine) {
     } else if (msg.type === 'image_once') {
         bubbleInner = buildViewOnceBubble(msgID, msg, isMine);
     } else {
-        // Text message
-if (msg.from === OWNER_UID) {
-    bubbleInner = `
-        <div class="bubble-owner">
-            <span class="crown-stamp">👑</span>
-            <span class="orn orn-tl">❧</span>
-            <span class="orn orn-bl">❧</span>
-            <span class="orn orn-br">❧</span>
-            <div class="bubble-content">${esc(msg.text)}</div>
-            <span class="gold-line"></span>
-            <span class="ts">${formatTime(msg.time)} ✓✓</span>
-        </div>`;
-} else {
-    bubbleInner = `<div class="bubble">${esc(msg.text)}</div>`;
-}
-}
+        // Text — use equippedBubble style, never hardcode by UID
+        if (bubbleStyle === 'bubble-owner') {
+            bubbleInner = `
+                <div class="bubble-owner">
+                    <span class="crown-stamp">👑</span>
+                    <span class="orn orn-tl">❧</span>
+                    <span class="orn orn-bl">❧</span>
+                    <span class="orn orn-br">❧</span>
+                    <div class="bubble-content">${esc(msg.text)}</div>
+                    <span class="gold-line"></span>
+                </div>`;
+        } else {
+            bubbleInner = `<div class="bubble">${esc(msg.text)}</div>`;
+        }
+    }
     
 
     // Reactions
@@ -829,42 +826,141 @@ function rewireAddBtn() {
     });
 }
 
-// ── IMAGE UPLOAD ───────────────────────────────────────────────────────────
+// ── IMAGE UPLOAD — WhatsApp preview style ─────────────────────────────────
+let _mediaFile    = null;
+let _mediaIsVideo = false;
+
 function setupImageUpload() {
-    const imgBtn      = document.getElementById('imageBtn');
-    const choiceSheet = document.getElementById('imgChoiceOverlay');
-    const regularIn   = document.getElementById('regularImgInput');
-    const onceIn      = document.getElementById('onceImgInput');
+    const imgBtn     = document.getElementById('imageBtn');
+    const fileInput  = document.getElementById('mediaFileInput');
 
-    imgBtn?.addEventListener('click', () => openOverlay('imgChoiceOverlay'));
+    imgBtn?.addEventListener('click', () => fileInput?.click());
 
-    document.getElementById('imgRegularBtn')?.addEventListener('click', () => {
-        closeOverlay('imgChoiceOverlay');
-        regularIn?.click();
-    });
-
-    document.getElementById('imgOnceBtn')?.addEventListener('click', () => {
-        closeOverlay('imgChoiceOverlay');
-        onceIn?.click();
-    });
-
-    regularIn?.addEventListener('change', async (e) => {
+    fileInput?.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        showToast('⬆️ Uploading...');
-        const url = await uploadToCloudinary(file);
-        if (url) await sendMessage({ type: 'image', imageURL: url });
+        _mediaFile    = file;
+        _mediaIsVideo = file.type.startsWith('video/');
+        _viewOnceOn   = false; // reset toggle
+
+        // Reset toggle UI
+        const toggle = document.getElementById('viewOnceToggle');
+        const thumb  = document.getElementById('viewOnceThumb');
+        if (toggle) toggle.style.background = '#333';
+        if (thumb)  thumb.style.left        = '2px';
+
+        // Show preview
+        const imgEl   = document.getElementById('mediaPreviewImg');
+        const videoEl = document.getElementById('mediaPreviewVideo');
+        const url      = URL.createObjectURL(file);
+
+        if (_mediaIsVideo) {
+            if (imgEl)   { imgEl.style.display   = 'none'; imgEl.src = ''; }
+            if (videoEl) { videoEl.style.display = 'block'; videoEl.src = url; }
+        } else {
+            if (videoEl) { videoEl.style.display = 'none'; videoEl.src = ''; }
+            if (imgEl)   { imgEl.style.display   = 'block'; imgEl.src = url; }
+        }
+
+        // Clear caption
+        const cap = document.getElementById('mediaCaptionInput');
+        if (cap) { cap.value = ''; cap.style.height = 'auto'; }
+
+        document.getElementById('mediaPreviewOverlay')?.classList.add('open');
         e.target.value = '';
+    });
+}
+
+// Called from HTML when user taps Send in media preview
+window.sendMediaPreview = async function() {
+    if (!_mediaFile) return;
+    document.getElementById('mediaPreviewOverlay')?.classList.remove('open');
+
+    showToast('⬆️ Uploading...');
+    const url = await uploadToCloudinary(_mediaFile);
+    if (!url) return;
+
+    const caption = document.getElementById('mediaCaptionInput')?.value.trim() || '';
+
+    if (_viewOnceOn) {
+        await sendMessage({ type: 'image_once', imageURL: url, viewed: false, text: caption });
+    } else {
+        await sendMessage({ type: 'image', imageURL: url, text: caption });
+    }
+    _mediaFile = null;
+};
+
+// ── TYPING INDICATOR ───────────────────────────────────────────────────────
+let typingTimer = null;
+
+function setupTypingIndicator() {
+    const input    = document.getElementById('msgInput');
+    const typingRef = ref(db, `chats/${chatID}/typing/${myUID}`);
+
+    input?.addEventListener('input', () => {
+        // Write typing:true
+        set(typingRef, true).catch(() => {});
+
+        // Clear after 2.5s of no typing
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            remove(typingRef).catch(() => {});
+        }, 2500);
     });
 
-    onceIn?.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        showToast('⬆️ Uploading...');
-        const url = await uploadToCloudinary(file);
-        if (url) await sendMessage({ type: 'image_once', imageURL: url, viewed: false });
-        e.target.value = '';
+    // Clean up on disconnect
+    onDisconnect(typingRef).remove();
+
+    // Listen to other user typing
+    const theirTypingRef = ref(db, `chats/${chatID}/typing/${targetUID}`);
+    onValue(theirTypingRef, (snap) => {
+        const indicator  = document.getElementById('typingIndicator');
+        const statusEl   = document.getElementById('headerStatus');
+        if (!indicator || !statusEl) return;
+        if (snap.val() === true) {
+            statusEl.style.display    = 'none';
+            indicator.classList.add('show');
+        } else {
+            statusEl.style.display    = '';
+            indicator.classList.remove('show');
+        }
     });
+}
+
+// ── DARK / LIGHT MODE ──────────────────────────────────────────────────────
+function setupThemeToggle() {
+    const btn       = document.getElementById('menuThemeToggle');
+    const icon      = document.getElementById('themeToggleIcon');
+    const label     = document.getElementById('themeToggleLabel');
+
+    // Load saved preference
+    const saved = localStorage.getItem(`chatTheme_${chatID}`) || 'dark';
+    applyColorMode(saved);
+    updateToggleUI(saved);
+
+    btn?.addEventListener('click', () => {
+        const current = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+        const next    = current === 'dark' ? 'light' : 'dark';
+        applyColorMode(next);
+        updateToggleUI(next);
+        localStorage.setItem(`chatTheme_${chatID}`, next);
+        document.getElementById('popupMenu')?.classList.remove('open');
+    });
+
+    function applyColorMode(mode) {
+        document.body.classList.toggle('light-mode', mode === 'light');
+    }
+
+    function updateToggleUI(mode) {
+        if (!icon || !label) return;
+        if (mode === 'dark') {
+            icon.textContent  = '☀️';
+            label.textContent = 'Light Mode';
+        } else {
+            icon.textContent  = '🌙';
+            label.textContent = 'Dark Mode';
+        }
+    }
 }
 
 // ── CLOUDINARY UPLOAD ──────────────────────────────────────────────────────
@@ -1115,26 +1211,57 @@ function applyBackground(bg) {
     const bgEl = document.getElementById('chatBg');
     if (!bgEl) return;
 
-    // Clear animated children
     bgEl.innerHTML = '';
+    bgEl.removeAttribute('style');
 
     // Remove all bg- classes
-    bgEl.className = 'chat-bg';
+    const toRemove = [...bgEl.classList].filter(c => c.startsWith('bg-'));
+    toRemove.forEach(c => bgEl.classList.remove(c));
 
     if (bg === 'custom' && customBgURL) {
         bgEl.classList.add('bg-custom');
-        bgEl.style.backgroundImage = `url(${customBgURL})`;
+        bgEl.style.backgroundImage    = `url(${customBgURL})`;
+        bgEl.style.backgroundSize     = 'cover';
+        bgEl.style.backgroundPosition = 'center';
         const overlay = document.createElement('div');
         overlay.className = 'bg-custom-overlay';
         overlay.style.background = `rgba(0,0,0,${customDim})`;
         bgEl.appendChild(overlay);
         document.getElementById('dimSliderWrap').style.display = 'block';
     } else {
-        bgEl.style.backgroundImage = '';
-        bgEl.classList.add(`bg-${bg}`);
+        // Only black or white
+        const safeBg = (bg === 'white') ? 'white' : 'black';
+        bgEl.classList.add(`bg-${safeBg}`);
         document.getElementById('dimSliderWrap').style.display = 'none';
-        injectAnimatedElements(bg, bgEl);
+        // Apply light/dark mode to body based on bg
+        document.body.classList.toggle('light-mode', safeBg === 'white');
     }
+}
+
+function loadBackground() {
+    const themeRef = ref(db, `chats/${chatID}/theme`);
+    // Use onValue so BOTH users see the change in real time when either sets it
+    onValue(themeRef, (snap) => {
+        if (!snap.exists()) {
+            applyBackground('black');
+            updateBgSelected();
+            return;
+        }
+        const data = snap.val();
+        currentBg  = data.theme || 'black';
+        customDim  = data.opacity ?? 0.5;
+
+        if (data.type === 'custom' && data.imageURL) {
+            customBgURL = data.imageURL;
+            const slider = document.getElementById('dimSlider');
+            if (slider) slider.value = customDim * 100;
+        } else {
+            customBgURL = null;
+        }
+
+        applyBackground(currentBg);
+        updateBgSelected();
+    });
 }
 
 function injectAnimatedElements(bg, container) {
@@ -1222,29 +1349,4 @@ window.addEventListener('beforeunload', () => {
     navigator.sendBeacon(url + '?x-http-method-override=PATCH', blob);
 });
 
-function loadBackground() {
-    // Use onValue — realtime listener so both users always see same theme
-    const themeRef = ref(db, `chats/${chatID}/theme`);
-    onValue(themeRef, (snap) => {
-        if (!snap.exists()) {
-            // No theme set yet — apply default black
-            applyBackground('black');
-            updateBgSelected();
-            return;
-        }
-        const data  = snap.val();
-        currentBg   = data.theme || 'black';
-        customDim   = data.opacity ?? 0.5;
 
-        if (data.type === 'custom' && data.imageURL) {
-            customBgURL = data.imageURL;
-            const slider = document.getElementById('dimSlider');
-            if (slider) slider.value = customDim * 100;
-        } else {
-            customBgURL = null;
-        }
-
-        applyBackground(currentBg);
-        updateBgSelected();
-    });
-}

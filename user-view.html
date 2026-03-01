@@ -521,6 +521,29 @@
         }
         @keyframes spin-loader { to { transform: rotate(360deg); } }
 
+        /* ══ MESSAGE BUTTON ════════════════════════════════════ */
+        .message-btn {
+            height: 46px;
+            padding: 0 22px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(0,242,255,0.35);
+            background: rgba(0,242,255,0.07);
+            color: var(--accent);
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: background 0.18s, transform 0.12s;
+            flex: 1;
+            white-space: nowrap;
+        }
+        .message-btn:active { transform: scale(0.93); background: rgba(0,242,255,0.14); }
+        .message-btn.loading { opacity: 0.6; pointer-events: none; }
+
         /* ══ TOAST ══════════════════════════════════════════════ */
         .toast {
             position: fixed; bottom: 30px; left: 50%;
@@ -704,6 +727,10 @@
         <button class="follow-btn state-follow" id="followBtn">
             <span id="followBtnIcon">➕</span>
             <span id="followBtnLabel">Follow</span>
+        </button>
+        <button class="message-btn" id="messageBtn">
+            <span>💬</span>
+            <span>Message</span>
         </button>
         <button class="like-btn" id="likeBtn">
             <span class="like-icon" id="likeIcon">🤍</span>

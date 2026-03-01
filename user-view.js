@@ -1,6 +1,6 @@
 import { initializeApp }                                      from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged }                       from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getDatabase, ref, get, set, update, increment, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, get, set, push, update, increment, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // ── Firebase config ────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -268,6 +268,7 @@ onAuthStateChanged(auth, async (viewer) => {
         setupFollowBtn(viewer.uid, targetUID);
         setupLikeBtn(viewer.uid, targetUID);
         setupModals(viewer.uid, targetUID, viewerRank, targetRank);
+        setupMessageBtn(viewer.uid, targetUID, targetData);
 
     } catch (e) {
         console.error('user-view.js error:', e);
@@ -397,14 +398,14 @@ function setupFollowersFollowingLinks() {
 
 // ── SHOW ROLE MENU ITEMS ───────────────────────────────────────────────────
 function showRoleMenuItems(viewerUID, viewerRank, targetRank, targetData) {
-    if (viewerRank <= targetRank) return;
-
-    const isTempBanned = targetData.tempBan && targetData.tempBan.until && targetData.tempBan.until > Date.now();
-
-    // ── Hide block button if target is staff ──────────────────────────────
+    // Always hide block button if target is staff — runs for ALL viewers including members
     if (targetRank >= ROLE_RANK.mod) {
         document.getElementById('menuBlock')?.style.setProperty('display', 'none');
     }
+
+    if (viewerRank <= targetRank) return;
+
+    const isTempBanned = targetData.tempBan && targetData.tempBan.until && targetData.tempBan.until > Date.now();
 
     if (viewerRank >= ROLE_RANK.mod) {
         document.querySelectorAll('.role-mod').forEach(el => el.style.display = 'block');
@@ -807,6 +808,64 @@ function setupModals(viewerUID, targetUID, viewerRank, targetRank) {
         document.getElementById(id)?.addEventListener('click', (e) => {
             if (e.target === document.getElementById(id)) closeModal(id);
         });
+    });
+}
+
+// ── DM / MESSAGE BUTTON ───────────────────────────────────────────────────
+function setupMessageBtn(viewerUID, targetUID, targetData) {
+    const btn = document.getElementById('messageBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        btn.classList.add('loading');
+
+        try {
+            // Deterministic conversation ID — same for both users always
+            const convId = [viewerUID, targetUID].sort().join('_');
+            const convRef = ref(db, `dms/${convId}`);
+            const snap    = await get(convRef);
+
+            if (!snap.exists()) {
+                // Create new DM conversation
+                const viewerSnap = await get(ref(db, `users/${viewerUID}`));
+                const viewerData = viewerSnap.exists() ? viewerSnap.val() : {};
+
+                await set(convRef, {
+                    participants: {
+                        [viewerUID]: true,
+                        [targetUID]: true,
+                    },
+                    participantNames: {
+                        [viewerUID]: viewerData.username || 'User',
+                        [targetUID]: targetData.username || 'User',
+                    },
+                    participantPhotos: {
+                        [viewerUID]: viewerData.photoURL  || '',
+                        [targetUID]: targetData.photoURL  || '',
+                    },
+                    createdAt:    Date.now(),
+                    lastMessage:  '',
+                    lastSender:   '',
+                    lastMessageAt: Date.now(),
+                });
+
+                // Add convo ref to both users' DM lists
+                await Promise.all([
+                    set(ref(db, `users/${viewerUID}/dms/${convId}`), true),
+                    set(ref(db, `users/${targetUID}/dms/${convId}`), true),
+                ]);
+            }
+
+            // Navigate to chat
+            const name = encodeURIComponent(targetData.username || 'User');
+            const photo = encodeURIComponent(targetData.photoURL || '');
+            window.location.href = `chat.html?dm=${convId}&uid=${targetUID}&name=${name}&photo=${photo}`;
+
+        } catch (e) {
+            console.error('message btn error:', e);
+            showToast('❌ Could not open chat');
+            btn.classList.remove('loading');
+        }
     });
 }
 

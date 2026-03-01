@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Zo-Tinder | Chat</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="staff-bubbles.css">
     <style>
         /* ══ ROOT ══════════════════════════════════════════════ */
         :root {
@@ -44,178 +43,124 @@
             pointer-events: none;
         }
 
-        /* Dark themes */
-        .bg-black     { background: #080808; }
-        .bg-void      { background: #050505; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"); }
-        .bg-carbon     { background: radial-gradient(ellipse at top, #1a1a1a 0%, #080808 100%); }
-        .bg-midnight   { background: linear-gradient(160deg, #05080f 0%, #0a1628 50%, #060d1e 100%); }
-        .bg-galaxy     { background: linear-gradient(160deg, #0d0d1a 0%, #1a0a2e 40%, #0a1a2e 100%); }
-        .bg-inferno    { background: linear-gradient(160deg, #0f0500 0%, #1a0800 50%, #0f0300 100%); }
-        .bg-matrix     { background: #000; background-image: repeating-linear-gradient(0deg, rgba(0,255,70,0.03) 0px, rgba(0,255,70,0.03) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, rgba(0,255,70,0.03) 0px, rgba(0,255,70,0.03) 1px, transparent 1px, transparent 40px); }
-        .bg-neoncity   { background: linear-gradient(160deg, #0a0014 0%, #140028 50%, #00081a 100%); }
-        .bg-deepocean  { background: linear-gradient(180deg, #020c1b 0%, #051628 50%, #020a14 100%); }
-
-        /* Colorful themes */
-        .bg-sakura     { background: linear-gradient(160deg, #1a0a10 0%, #2a0a18 50%, #150812 100%); }
-        .bg-sunset     { background: linear-gradient(160deg, #1a0800 0%, #1a0a10 50%, #0f0518 100%); }
-        .bg-aurora     { background: linear-gradient(160deg, #001a1a 0%, #0d001a 50%, #001a0d 100%); }
-        .bg-cottoncandy{ background: linear-gradient(160deg, #1a0a14 0%, #0a0a1a 100%); }
-        .bg-lava       { background: linear-gradient(160deg, #1a0500 0%, #1a0800 100%); }
-        .bg-frozen     { background: linear-gradient(160deg, #020d1a 0%, #051428 100%); }
-        .bg-goldenhour { background: linear-gradient(160deg, #1a0e00 0%, #1a0a00 100%); }
-        .bg-forest     { background: linear-gradient(160deg, #020a02 0%, #05140a 100%); }
-        .bg-bubblegum  { background: linear-gradient(160deg, #1a0514 0%, #0a0514 100%); }
-
-        /* Animated themes */
-        .bg-starfall   { background: #050505; overflow: hidden; }
-        .bg-wave       { background: linear-gradient(160deg, #020814 0%, #030d1a 100%); overflow: hidden; }
-        .bg-particles  { background: #050508; overflow: hidden; }
-        .bg-holo       { background: linear-gradient(160deg, #0a0514 0%, #050a14 50%, #0a1405 100%); animation: holoShift 6s ease-in-out infinite alternate; }
-        .bg-snow       { background: #080808; overflow: hidden; }
-        .bg-petalfall  { background: linear-gradient(160deg, #1a0510 0%, #0d0515 100%); overflow: hidden; }
-
-        @keyframes holoShift {
-            0%   { filter: hue-rotate(0deg) brightness(1); }
-            100% { filter: hue-rotate(60deg) brightness(1.1); }
+        /* ══ CHAT BACKGROUND THEMES ═════════════════════════════ */
+        .chat-bg {
+            position: fixed; inset: 0; z-index: 0;
+            transition: background 0.4s ease;
+            pointer-events: none;
         }
 
-        /* Glow overlays for themes */
-        .bg-galaxy::after     { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(167,139,250,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(0,242,255,0.06) 0%, transparent 60%); pointer-events:none; }
-        .bg-inferno::after    { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255,62,29,0.1) 0%, transparent 60%); pointer-events:none; }
-        .bg-neoncity::after   { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 30% 50%, rgba(255,0,255,0.06) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(0,242,255,0.06) 0%, transparent 50%); pointer-events:none; }
-        .bg-deepocean::after  { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 50% 80%, rgba(0,100,255,0.08) 0%, transparent 60%); pointer-events:none; }
-        .bg-aurora::after     { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 20% 40%, rgba(0,242,255,0.07) 0%, transparent 50%), radial-gradient(ellipse at 80% 60%, rgba(0,255,136,0.05) 0%, transparent 50%); pointer-events:none; }
+        .bg-black  { background: #080808; }
+        .bg-white  { background: #f0f0f5; }
 
         /* Custom image bg */
         .bg-custom { background-size: cover; background-position: center; }
         .bg-custom-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); pointer-events:none; }
 
-        /* ══ ANIMATED BG ELEMENTS ═══════════════════════════════ */
-        .star {
-            position: absolute; border-radius: 50%;
-            background: white; animation: starFall linear infinite;
-            pointer-events: none;
+        /* ══ DARK / LIGHT MODE ══════════════════════════════════ */
+        body.light-mode {
+            --bg:     #f0f0f5;
+            --panel:  #ffffff;
+            --panel2: #e8e8f0;
+            --border: rgba(0,0,0,0.08);
+            --text:   #0a0a0a;
+            --sub:    #999;
         }
-        @keyframes starFall {
-            0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
+        body.light-mode .chat-header   { background: rgba(240,240,245,0.95); border-bottom-color: rgba(0,0,0,0.08); }
+        body.light-mode #chatBg { background: #f0f0f5 !important; }
+        body.light-mode .input-bar     { background: rgba(240,240,245,0.98); border-top: 1px solid rgba(0,0,0,0.08); }
+        body.light-mode .date-separator::before,
+        body.light-mode .date-separator::after { background: rgba(0,0,0,0.08); }
+        body.light-mode .date-separator span { background: rgba(240,240,245,0.9); color: #aaa; }
+        body.light-mode .back-btn      { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.08); color: #0a0a0a; }
+        body.light-mode .h-action-btn  { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); color: #0a0a0a; }
+        body.light-mode .input-wrap    { background: #fff; border-color: rgba(0,0,0,0.1); }
+        body.light-mode #msgInput      { color: #0a0a0a; }
+        body.light-mode .bs-default .bubble    { background: #e8e8f0; border-color: rgba(0,0,0,0.06); color: #0a0a0a; }
+        body.light-mode .bs-default.mine .bubble { background: var(--accent); color: #000; }
+        body.light-mode .popup-menu    { background: #fff; border-color: rgba(0,0,0,0.08); }
+        body.light-mode .menu-item     { color: #0a0a0a; }
+        body.light-mode .emoji-panel,
+        body.light-mode .sticker-panel { background: #f8f8fc; }
+        body.light-mode .sheet         { background: #f8f8fc; }
+        body.light-mode .toast         { background: #fff; color: #0a0a0a; border-color: rgba(0,0,0,0.1); }
 
-        .wave-el {
-            position: absolute; bottom: 0; left: -50%; right: -50%;
-            height: 200px;
-            background: linear-gradient(180deg, transparent, rgba(0,100,255,0.05));
-            border-radius: 50%;
-            animation: waveMov ease-in-out infinite alternate;
-            pointer-events: none;
-        }
-        @keyframes waveMov {
-            0%   { transform: translateX(-5%) scaleY(1); }
-            100% { transform: translateX(5%) scaleY(1.2); }
-        }
-
-        .particle {
-            position: absolute; border-radius: 50%;
-            animation: particleFloat ease-in-out infinite alternate;
-            pointer-events: none;
-        }
-        @keyframes particleFloat {
-            0%   { transform: translateY(0) scale(1); opacity: 0.6; }
-            100% { transform: translateY(-20px) scale(1.2); opacity: 0.2; }
-        }
-
-        .snowflake {
-            position: absolute; color: white; font-size: 12px;
-            animation: snowFall linear infinite;
-            pointer-events: none; opacity: 0.6;
-        }
-        @keyframes snowFall {
-            0%   { transform: translateY(-20px) rotate(0deg); }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-
-        .petal {
-            position: absolute; font-size: 14px;
-            animation: petalFall linear infinite;
-            pointer-events: none;
-        }
-        @keyframes petalFall {
-            0%   { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 1; }
-            50%  { transform: translateY(50vh) rotate(180deg) translateX(30px); }
-            100% { transform: translateY(100vh) rotate(360deg) translateX(-20px); opacity: 0; }
-        }
-
-        /* ══ HEADER ════════════════════════════════════════════ */
+        /* ══ HEADER — centered layout ══════════════════════════ */
         .chat-header {
             position: relative; z-index: 100;
             background: rgba(8,8,8,0.92);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
-            padding: 48px 14px 12px;
-            display: flex; align-items: center; gap: 10px;
-            flex-shrink: 0;
+            padding: 44px 14px 8px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 2px; flex-shrink: 0;
         }
 
+        /* Back + menu float in corners */
         .back-btn {
-            width: 38px; height: 38px; border-radius: 50%;
+            position: absolute; top: 48px; left: 14px;
+            width: 36px; height: 36px; border-radius: 50%;
             background: rgba(255,255,255,0.06);
             border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; cursor: pointer; flex-shrink: 0;
+            font-size: 18px; cursor: pointer;
             color: white; text-decoration: none;
             transition: background 0.15s;
         }
         .back-btn:active { background: rgba(255,255,255,0.12); }
 
-        /* Header avatar + frame */
+        /* Header avatar wrap — centered, with space for frame overflow */
         .header-avatar-wrap {
-            position: relative; width: 44px; height: 44px; flex-shrink: 0; cursor: pointer;
+            position: relative;
+            width: 52px; height: 52px;
+            cursor: pointer; flex-shrink: 0;
+            margin-top: 0;
         }
 
         .header-avatar-img {
-            width: 44px; height: 44px; border-radius: 50%;
+            width: 48px; height: 48px; border-radius: 50%;
             object-fit: cover; background: var(--panel2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; position: relative; z-index: 3;
-            border: 2px solid var(--bg);
+            font-size: 1.4rem; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 3;
+            border: 2px solid var(--bg); overflow: hidden;
         }
+        .header-avatar-img img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
 
         .header-frame {
             position: absolute; top: 50%; left: 50%;
-            width: 50px; height: 50px; border-radius: 50%;
+            width: 58px; height: 58px; border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 2; pointer-events: none;
         }
 
-        /* Reuse cf- frame classes for header */
-        .hf-owner .header-frame { background: conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842,#fff176,#f5c842); padding:2px; animation:hf-spin 3s linear infinite; box-shadow:0 0 10px rgba(245,200,66,0.5); }
+        /* Frame ring styles */
+        .hf-owner .header-frame { background: conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842,#fff176,#f5c842); padding:2px; animation:hf-spin 3s linear infinite; box-shadow:0 0 14px rgba(245,200,66,0.6); }
         .hf-owner .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
-        .hf-admin .header-frame { background: conic-gradient(#ff3e1d,#ff6b00,#ff3e1d,#ff0060,#ff3e1d); padding:2px; animation:hf-spin 2s linear infinite; box-shadow:0 0 10px rgba(255,62,29,0.5); }
+        .hf-admin .header-frame { background: conic-gradient(#ff3e1d,#ff6b00,#ff3e1d,#ff0060,#ff3e1d); padding:2px; animation:hf-spin 2s linear infinite; box-shadow:0 0 14px rgba(255,62,29,0.6); }
         .hf-admin .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
-        .hf-mod   .header-frame { border:2px solid var(--accent2); box-shadow:0 0 8px rgba(167,139,250,0.5); animation:hf-spin 5s linear infinite; }
-        .hf-default .header-frame { border:2px solid var(--accent); box-shadow:0 0 8px rgba(0,242,255,0.4); animation:hf-spin 4s linear infinite; }
-        .hf-fire  .header-frame { background: conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:2px; animation:hf-spin 1.5s linear infinite; box-shadow:0 0 10px rgba(255,69,0,0.6); }
+        .hf-mod   .header-frame { border:2px solid var(--accent2); box-shadow:0 0 10px rgba(167,139,250,0.5); animation:hf-spin 5s linear infinite; }
+        .hf-default .header-frame { border:2px solid var(--accent); box-shadow:0 0 10px rgba(0,242,255,0.4); animation:hf-spin 4s linear infinite; }
+        .hf-fire  .header-frame { background: conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:2px; animation:hf-spin 1.5s linear infinite; box-shadow:0 0 14px rgba(255,69,0,0.7); }
         .hf-fire  .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
-        .hf-aurora .header-frame { background: conic-gradient(#00f2ff,#a78bfa,#00ff88,#ff6bff,#00f2ff); padding:2px; animation:hf-spin 6s linear infinite; }
+        .hf-aurora .header-frame { background: conic-gradient(#00f2ff,#a78bfa,#00ff88,#ff6bff,#00f2ff); padding:2px; animation:hf-spin 6s linear infinite; box-shadow:0 0 14px rgba(0,242,255,0.4); }
         .hf-aurora .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
         .hf-galaxy .header-frame { border:2px solid transparent; background: linear-gradient(var(--bg),var(--bg)) padding-box, conic-gradient(#4a00e0,#8e2de2,#00c9ff,#4a00e0) border-box; animation:hf-spin 8s linear infinite; }
         .hf-none  .header-frame { display:none; }
 
         @keyframes hf-spin { from { transform:translate(-50%,-50%) rotate(0deg); } to { transform:translate(-50%,-50%) rotate(360deg); } }
 
-        /* Header info */
-        .header-info { flex:1; min-width:0; }
-
+        /* Name + badge row */
         .header-name-row {
-            display: flex; align-items: center; gap: 6px;
-            margin-bottom: 1px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
 
         .header-name {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.1rem; letter-spacing: 1px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 1.1rem; letter-spacing: 1.5px;
+            white-space: nowrap;
         }
 
         .role-badge {
@@ -228,29 +173,62 @@
         .role-badge.admin { display:inline-flex; background:rgba(255,62,29,0.15);  color:var(--admin); border:1px solid rgba(255,62,29,0.3); }
         .role-badge.mod   { display:inline-flex; background:rgba(167,139,250,0.15);color:var(--mod);   border:1px solid rgba(167,139,250,0.3); }
 
+        /* Status / typing row */
+        .header-status-row {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 18px;
+        }
+
         .header-status {
             font-size: 11px; color: var(--sub); font-weight: 700;
+            text-align: center;
         }
         .header-status.online { color: #00e676; }
 
         .header-achievements {
             font-size: 10px; color: #444; font-weight: 700;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            margin-top: 1px;
+            text-align: center;
         }
 
-        /* Header action buttons */
-        .header-actions { display:flex; gap:6px; flex-shrink:0; }
+        /* Typing indicator */
+        .typing-indicator {
+            display: none; align-items: center; gap: 4px;
+            font-size: 11px; color: var(--accent); font-weight: 700;
+        }
+        .typing-indicator.show { display: flex; }
+        .typing-dots { display: flex; gap: 2px; align-items: center; }
+        .typing-dots span {
+            width: 4px; height: 4px; border-radius: 50%;
+            background: var(--accent); opacity: 0.4;
+            animation: typingDot 1.2s ease-in-out infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingDot {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Action buttons row */
+        .header-actions {
+            display: flex; gap: 10px; align-items: center;
+            padding-top: 2px;
+        }
 
         .h-action-btn {
-            width: 36px; height: 36px; border-radius: 50%;
+            width: 32px; height: 32px; border-radius: 50%;
             background: rgba(255,255,255,0.05);
             border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px; cursor: pointer;
+            font-size: 13px; cursor: pointer;
             transition: background 0.15s; color: white;
         }
         .h-action-btn:active { background: rgba(255,255,255,0.12); transform: scale(0.9); }
+
+        /* Menu btn floats top-right */
+        .header-menu-btn {
+            position: absolute; top: 48px; right: 14px;
+        }
 
         /* ══ CHAT AREA ══════════════════════════════════════════ */
         .chat-area {
@@ -285,39 +263,6 @@
         @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
         .msg-row.mine { flex-direction: row-reverse; }
-        .msg-row.mine .msg-avatar-wrap { display: none; }
-
-        /* Message avatar */
-        .msg-avatar-wrap { position:relative; width:30px; height:30px; flex-shrink:0; }
-
-        .msg-avatar-img {
-            width: 30px; height: 30px; border-radius: 50%;
-            object-fit: cover; background: var(--panel2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.8rem; position: relative; z-index: 3;
-            border: 1.5px solid var(--bg);
-        }
-
-        .msg-frame {
-            position: absolute; top:50%; left:50%;
-            width: 34px; height: 34px; border-radius: 50%;
-            transform: translate(-50%,-50%);
-            z-index: 2; pointer-events: none;
-        }
-
-        /* Mini frame classes for message avatars */
-        .mf-owner .msg-frame { background:conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842); padding:1.5px; animation:hf-spin 3s linear infinite; }
-        .mf-owner .msg-frame::after { content:''; position:absolute; inset:1.5px; border-radius:50%; background:var(--bg); }
-        .mf-admin .msg-frame { background:conic-gradient(#ff3e1d,#ff6b00,#ff3e1d); padding:1.5px; animation:hf-spin 2s linear infinite; }
-        .mf-admin .msg-frame::after { content:''; position:absolute; inset:1.5px; border-radius:50%; background:var(--bg); }
-        .mf-mod   .msg-frame { border:1.5px solid var(--accent2); animation:hf-spin 5s linear infinite; }
-        .mf-default .msg-frame { border:1.5px solid var(--accent); animation:hf-spin 4s linear infinite; }
-        .mf-fire  .msg-frame { background:conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:1.5px; animation:hf-spin 1.5s linear infinite; }
-        .mf-fire  .msg-frame::after { content:''; position:absolute; inset:1.5px; border-radius:50%; background:var(--bg); }
-        .mf-aurora .msg-frame { background:conic-gradient(#00f2ff,#a78bfa,#00ff88,#00f2ff); padding:1.5px; animation:hf-spin 6s linear infinite; }
-        .mf-aurora .msg-frame::after { content:''; position:absolute; inset:1.5px; border-radius:50%; background:var(--bg); }
-        .mf-galaxy .msg-frame { border:1.5px solid transparent; background:linear-gradient(var(--bg),var(--bg)) padding-box, conic-gradient(#4a00e0,#8e2de2,#00c9ff,#4a00e0) border-box; animation:hf-spin 8s linear infinite; }
-        .mf-none  .msg-frame { display:none; }
 
         /* ── Bubble wrapper ── */
         .msg-content { display:flex; flex-direction:column; max-width: 72%; }
@@ -325,12 +270,62 @@
 
         /* ── Bubble styles ── */
         .bubble {
+            display: inline-block;
+            width: fit-content;
+            min-width: 80px;
+            max-width: 100%;
             padding: 10px 14px;
             font-size: 14px; font-weight: 600; line-height: 1.45;
             word-break: break-word; position: relative;
             cursor: pointer; transition: transform 0.1s;
         }
         .bubble:active { transform: scale(0.97); }
+
+        /* ── Owner bubble ── */
+        .bubble-owner {
+            display: inline-block;
+            width: fit-content;
+            max-width: 100%;
+            position: relative;
+            padding: 10px 14px;
+            border-radius: 18px 18px 4px 18px;
+            background: linear-gradient(135deg, #1a1200, #2a1e00);
+            border: 1px solid rgba(255,215,0,0.3);
+            box-shadow: 0 0 14px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08);
+            cursor: pointer; transition: transform 0.1s;
+            overflow: visible;
+        }
+        .mine .bubble-owner { border-radius: 18px 18px 18px 4px; }
+        .bubble-owner:active { transform: scale(0.97); }
+        .bubble-owner::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.06), transparent);
+            border-radius: inherit;
+            animation: ownerShimmer 3.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes ownerShimmer { 0% { left: -100%; } 100% { left: 200%; } }
+        .bubble-owner .crown-stamp {
+            position: absolute; top: -12px; right: -4px;
+            font-size: 13px; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7));
+            animation: crownBob 2.5s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes crownBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+        .bubble-owner .orn {
+            position: absolute; font-size: 8px; color: rgba(255,215,0,0.2); pointer-events: none; line-height: 1;
+        }
+        .orn-tl { top: 3px; left: 5px; }
+        .orn-bl { bottom: 3px; left: 5px; transform: scaleY(-1); }
+        .orn-br { bottom: 3px; right: 5px; transform: scale(-1,-1); }
+        .bubble-owner .bubble-content {
+            position: relative; z-index: 1;
+            color: #ffe88a; font-size: 14px; font-weight: 600;
+            line-height: 1.45; word-break: break-word;
+        }
+        .bubble-owner .gold-line {
+            display: block; width: 100%; height: 1px; margin-top: 5px;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.15), transparent);
+        }
 
         /* Style 1: Default rounded */
         .bs-default .bubble {
@@ -403,6 +398,12 @@
             border: 1px solid rgba(0,242,255,0.15);
             border-radius: 16px 16px 4px 16px;
             color: white;
+        }
+
+        /* ── bubble-owner sizing override ── */
+        .bubble-owner {
+            min-width: 80px;
+            width: fit-content !important;
         }
 
         /* ── Deleted message ── */
@@ -519,14 +520,14 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--border);
-            padding: 10px 12px 28px;
-            display: flex; align-items: flex-end; gap: 8px;
+            padding: 8px 10px 20px;
+            display: flex; align-items: center; gap: 6px;
         }
 
         .input-btn {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 34px; height: 34px; border-radius: 50%;
             background: none; border: none;
-            font-size: 20px; cursor: pointer; flex-shrink: 0;
+            font-size: 19px; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
             transition: transform 0.15s; color: var(--sub);
         }
@@ -536,9 +537,9 @@
         .input-wrap {
             flex: 1; background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 20px; padding: 9px 14px;
-            display: flex; align-items: flex-end; gap: 8px;
-            transition: border-color 0.2s; min-height: 38px;
+            border-radius: 18px; padding: 7px 12px;
+            display: flex; align-items: center; gap: 6px;
+            transition: border-color 0.2s; min-height: 34px;
         }
         .input-wrap:focus-within { border-color: rgba(0,242,255,0.25); }
 
@@ -546,16 +547,16 @@
             flex: 1; background: none; border: none; outline: none;
             color: var(--text); font-family: 'Nunito', sans-serif;
             font-size: 14px; font-weight: 600; resize: none;
-            max-height: 100px; line-height: 1.4;
+            max-height: 80px; line-height: 1.4;
             scrollbar-width: none; user-select: text;
         }
         #msgInput::placeholder { color: var(--sub); }
         #msgInput::-webkit-scrollbar { display: none; }
 
         .send-btn {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 36px; height: 36px; border-radius: 50%;
             background: var(--accent); border: none;
-            color: #000; font-size: 18px; cursor: pointer;
+            color: #000; font-size: 16px; cursor: pointer;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
             transition: transform 0.15s, opacity 0.15s;
             opacity: 0.4; pointer-events: none;
@@ -623,8 +624,8 @@
 
         .sticker-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 10px; overflow-y: auto; max-height: 36vh;
-            scrollbar-width: none;
+            gap: 14px; overflow-y: auto; max-height: 36vh;
+            scrollbar-width: none; padding: 4px 2px;
         }
         .sticker-grid::-webkit-scrollbar { display: none; }
 
@@ -860,27 +861,43 @@
 
 <!-- ══ HEADER ══ -->
 <div class="chat-header">
+
+    <!-- Back btn — absolute top-left -->
     <a href="messages.html" class="back-btn">←</a>
 
+    <!-- Menu btn — absolute top-right -->
+    <button class="h-action-btn header-menu-btn" id="menuBtn" title="More">⋮</button>
+
+    <!-- Avatar centered -->
     <div class="header-avatar-wrap hf-none" id="headerAvatarWrap" onclick="goToProfile()">
         <div class="header-avatar-img" id="headerAvatarImg"></div>
         <div class="header-frame" id="headerFrame"></div>
     </div>
 
-    <div class="header-info">
-        <div class="header-name-row">
-            <div class="header-name" id="headerName">—</div>
-            <div class="role-badge" id="headerRoleBadge"></div>
-        </div>
-        <div class="header-status" id="headerStatus">Loading...</div>
-        <div class="header-achievements" id="headerAchievements" style="display:none;"></div>
+    <!-- Name + badge -->
+    <div class="header-name-row">
+        <div class="header-name" id="headerName">—</div>
+        <div class="role-badge" id="headerRoleBadge"></div>
     </div>
 
+    <!-- Status / typing row -->
+    <div class="header-status-row">
+        <div class="header-status" id="headerStatus">Loading...</div>
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            typing...
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="header-achievements" id="headerAchievements" style="display:none;"></div>
+
+    <!-- Action buttons -->
     <div class="header-actions">
         <button class="h-action-btn" id="callBtn"  title="Voice Call">📞</button>
         <button class="h-action-btn" id="videoBtn" title="Video Call">📹</button>
-        <button class="h-action-btn" id="menuBtn"  title="More">⋮</button>
     </div>
+
 </div>
 
 <!-- ══ 3-DOT POPUP MENU ══ -->
@@ -890,6 +907,10 @@
     </button>
     <button class="menu-item" id="menuBg">
         <span class="menu-icon">🎨</span> Chat Background
+    </button>
+    <button class="menu-item" id="menuThemeToggle">
+        <span class="menu-icon" id="themeToggleIcon">☀️</span>
+        <span id="themeToggleLabel">Light Mode</span>
     </button>
     <button class="menu-item" id="menuMute">
         <span class="menu-icon">🔕</span> Mute Notifications
@@ -944,23 +965,45 @@
     </div>
 </div>
 
-<!-- ══ IMAGE TYPE CHOICE SHEET ══ -->
-<div class="overlay" id="imgChoiceOverlay">
-    <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title">Send Image</div>
-        <div class="img-choice-card" id="imgRegularBtn">
-            <div class="img-choice-icon">📷</div>
-            <div>
-                <div class="img-choice-title">Send as Photo</div>
-                <div class="img-choice-sub">Stays in chat forever</div>
-            </div>
+<!-- ══ MEDIA PREVIEW OVERLAY (WhatsApp style) ══ -->
+<div class="overlay" id="mediaPreviewOverlay" style="align-items:center; background:rgba(0,0,0,0.95);">
+    <div style="width:100%; height:100%; display:flex; flex-direction:column; padding: 52px 0 0;">
+        <!-- Top bar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 16px 16px;">
+            <button onclick="document.getElementById('mediaPreviewOverlay').classList.remove('open')"
+                style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+            <div style="font-size:15px;font-weight:900;color:white;">Send Media</div>
+            <div style="width:38px;"></div>
         </div>
-        <div class="img-choice-card" id="imgOnceBtn">
-            <div class="img-choice-icon">👁️</div>
-            <div>
-                <div class="img-choice-title">View Once</div>
-                <div class="img-choice-sub">Disappears after viewing once</div>
+
+        <!-- Preview area -->
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:0 16px; overflow:hidden;">
+            <img id="mediaPreviewImg" src="" alt="" style="max-width:100%; max-height:55vh; border-radius:16px; object-fit:contain; display:none;">
+            <video id="mediaPreviewVideo" src="" style="max-width:100%; max-height:55vh; border-radius:16px; object-fit:contain; display:none;" controls playsinline></video>
+        </div>
+
+        <!-- Bottom controls -->
+        <div style="padding:16px; background:rgba(8,8,8,0.9); border-top:1px solid rgba(255,255,255,0.06);">
+            <!-- View Once toggle -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding:12px 14px; background:rgba(255,255,255,0.05); border-radius:14px; border:1px solid rgba(255,255,255,0.06);">
+                <div>
+                    <div style="font-size:14px;font-weight:900;color:white;">👁️ View Once</div>
+                    <div style="font-size:11px;color:#555;font-weight:700;margin-top:2px;">Disappears after viewing once</div>
+                </div>
+                <div id="viewOnceToggle" onclick="toggleViewOnce()"
+                    style="width:44px;height:24px;border-radius:12px;background:#333;cursor:pointer;position:relative;transition:background 0.2s;">
+                    <div id="viewOnceThumb" style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
+                </div>
+            </div>
+
+            <!-- Caption input -->
+            <div style="display:flex; align-items:flex-end; gap:10px;">
+                <div style="flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:10px 14px;">
+                    <textarea id="mediaCaptionInput" placeholder="Add a caption..." rows="1"
+                        style="width:100%;background:none;border:none;outline:none;color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;resize:none;max-height:80px;scrollbar-width:none;"></textarea>
+                </div>
+                <button id="mediaSendBtn" onclick="sendMediaPreview()"
+                    style="width:46px;height:46px;border-radius:50%;background:var(--accent);border:none;color:#000;font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">➤</button>
             </div>
         </div>
     </div>
@@ -998,103 +1041,15 @@
     <div class="sheet" style="max-height:80vh; overflow-y:auto;">
         <div class="sheet-handle"></div>
         <div class="sheet-title">Chat Background</div>
-        <div class="bg-picker-grid" id="bgPickerGrid">
+        <div class="bg-picker-grid" id="bgPickerGrid" style="grid-template-columns:repeat(3,1fr);">
 
-            <div class="bg-option" data-bg="black">
+            <div class="bg-option selected" data-bg="black">
                 <div class="bg-option-preview bg-opt-black">🌑</div>
                 <div class="bg-option-label">Black</div>
             </div>
-            <div class="bg-option" data-bg="void">
-                <div class="bg-option-preview bg-opt-void">⬛</div>
-                <div class="bg-option-label">Void</div>
-            </div>
-            <div class="bg-option" data-bg="carbon">
-                <div class="bg-option-preview bg-opt-carbon">🪨</div>
-                <div class="bg-option-label">Carbon</div>
-            </div>
-            <div class="bg-option" data-bg="midnight">
-                <div class="bg-option-preview bg-opt-midnight">🌙</div>
-                <div class="bg-option-label">Midnight</div>
-            </div>
-            <div class="bg-option" data-bg="galaxy">
-                <div class="bg-option-preview bg-opt-galaxy">🌌</div>
-                <div class="bg-option-label">Galaxy</div>
-            </div>
-            <div class="bg-option" data-bg="inferno">
-                <div class="bg-option-preview bg-opt-inferno">🔥</div>
-                <div class="bg-option-label">Inferno</div>
-            </div>
-            <div class="bg-option" data-bg="matrix">
-                <div class="bg-option-preview bg-opt-matrix">💚</div>
-                <div class="bg-option-label">Matrix</div>
-            </div>
-            <div class="bg-option" data-bg="neoncity">
-                <div class="bg-option-preview bg-opt-neoncity">🟣</div>
-                <div class="bg-option-label">Neon City</div>
-            </div>
-            <div class="bg-option" data-bg="deepocean">
-                <div class="bg-option-preview bg-opt-deepocean">🌊</div>
-                <div class="bg-option-label">Deep Ocean</div>
-            </div>
-            <div class="bg-option" data-bg="sakura">
-                <div class="bg-option-preview bg-opt-sakura">🌸</div>
-                <div class="bg-option-label">Sakura</div>
-            </div>
-            <div class="bg-option" data-bg="sunset">
-                <div class="bg-option-preview bg-opt-sunset">🌅</div>
-                <div class="bg-option-label">Sunset</div>
-            </div>
-            <div class="bg-option" data-bg="aurora">
-                <div class="bg-option-preview bg-opt-aurora">🌈</div>
-                <div class="bg-option-label">Aurora</div>
-            </div>
-            <div class="bg-option" data-bg="cottoncandy">
-                <div class="bg-option-preview bg-opt-cottoncandy">🍬</div>
-                <div class="bg-option-label">Cotton Candy</div>
-            </div>
-            <div class="bg-option" data-bg="lava">
-                <div class="bg-option-preview bg-opt-lava">🟠</div>
-                <div class="bg-option-label">Lava</div>
-            </div>
-            <div class="bg-option" data-bg="frozen">
-                <div class="bg-option-preview bg-opt-frozen">💙</div>
-                <div class="bg-option-label">Frozen</div>
-            </div>
-            <div class="bg-option" data-bg="goldenhour">
-                <div class="bg-option-preview bg-opt-goldenhour">💛</div>
-                <div class="bg-option-label">Golden Hour</div>
-            </div>
-            <div class="bg-option" data-bg="forest">
-                <div class="bg-option-preview bg-opt-forest">🌿</div>
-                <div class="bg-option-label">Forest</div>
-            </div>
-            <div class="bg-option" data-bg="bubblegum">
-                <div class="bg-option-preview bg-opt-bubblegum">🫧</div>
-                <div class="bg-option-label">Bubble Gum</div>
-            </div>
-            <div class="bg-option" data-bg="starfall">
-                <div class="bg-option-preview bg-opt-starfall">⭐</div>
-                <div class="bg-option-label">Starfall ✨</div>
-            </div>
-            <div class="bg-option" data-bg="wave">
-                <div class="bg-option-preview bg-opt-wave">🌊</div>
-                <div class="bg-option-label">Wave ✨</div>
-            </div>
-            <div class="bg-option" data-bg="particles">
-                <div class="bg-option-preview bg-opt-particles">💫</div>
-                <div class="bg-option-label">Particles ✨</div>
-            </div>
-            <div class="bg-option" data-bg="holo">
-                <div class="bg-option-preview bg-opt-holo">🔮</div>
-                <div class="bg-option-label">Holographic ✨</div>
-            </div>
-            <div class="bg-option" data-bg="snow">
-                <div class="bg-option-preview bg-opt-snow">❄️</div>
-                <div class="bg-option-label">Snow ✨</div>
-            </div>
-            <div class="bg-option" data-bg="petalfall">
-                <div class="bg-option-preview bg-opt-petalfall">🌸</div>
-                <div class="bg-option-label">Petal Fall ✨</div>
+            <div class="bg-option" data-bg="white">
+                <div class="bg-option-preview" style="background:#f0f0f5;">☀️</div>
+                <div class="bg-option-label">White</div>
             </div>
             <div class="bg-option" data-bg="custom">
                 <div class="bg-option-preview bg-opt-custom">📷</div>
@@ -1136,8 +1091,7 @@
 </div>
 
 <!-- ══ HIDDEN FILE INPUTS ══ -->
-<input type="file" id="regularImgInput" accept="image/*" style="display:none;">
-<input type="file" id="onceImgInput"    accept="image/*,video/*" style="display:none;">
+<input type="file" id="mediaFileInput"  accept="image/*,video/*" style="display:none;">
 <input type="file" id="stickerImgInput" accept="image/*" style="display:none;">
 
 <!-- ══ TOAST ══ -->
@@ -1161,6 +1115,22 @@
         sendBtn?.classList.toggle('active', this.value.trim().length > 0);
     });
 
+    // ── Media preview: view once toggle ──
+    let _viewOnceOn = false;
+    window.toggleViewOnce = function() {
+        _viewOnceOn = !_viewOnceOn;
+        const toggle = document.getElementById('viewOnceToggle');
+        const thumb  = document.getElementById('viewOnceThumb');
+        toggle.style.background = _viewOnceOn ? 'var(--accent)' : '#333';
+        thumb.style.left        = _viewOnceOn ? '22px' : '2px';
+    };
+
+    // Caption textarea auto-resize
+    document.getElementById('mediaCaptionInput')?.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+    });
+
     // ── Close panels on outside tap ──
     ['emojiPanel','stickerPanel'].forEach(id => {
         document.addEventListener('click', (e) => {
@@ -1182,7 +1152,7 @@
     });
 
     // ── Overlay close on backdrop tap ──
-    ['imgChoiceOverlay','msgOptionsOverlay','bgPickerOverlay'].forEach(id => {
+    ['msgOptionsOverlay','bgPickerOverlay'].forEach(id => {
         document.getElementById(id)?.addEventListener('click', (e) => {
             if (e.target.id === id) document.getElementById(id).classList.remove('open');
         });
