@@ -102,37 +102,37 @@ function renderProfile(uid, data) {
     const dot = document.getElementById('onlineDot');
     if (dot) dot.style.display = data.isOnline ? 'block' : 'none';
 
-    // ── Frame — role overrides equipped frame ──────────────────────────────
+    // ── Frame — reads equippedFrame from Firebase dynamically ────────────────
     const wrap = document.getElementById('avatarWrap');
     if (wrap) {
-        const role = (uid === OWNER_UID) ? 'owner' : (data.role || 'member');
+        // Clean up any previously injected PNG elements
+        wrap.querySelectorAll('.owner-png-aura, .owner-png-frame').forEach(el => el.remove());
+        document.body.classList.remove('owner-frame-active');
 
-        if (role === 'owner') {
-            // PNG frame — inject overlay elements
+        const equippedFrame = data.equippedFrame || null;
+
+        if (equippedFrame === 'frame-owner') {
+            // Owner PNG frame with wings
             wrap.className = 'avatar-wrap frame-owner-png';
+            // Push name/location down to clear the banner
+            document.body.classList.add('owner-frame-active');
 
-            // Remove any existing injected elements first
-            wrap.querySelectorAll('.owner-png-aura, .owner-png-frame').forEach(el => el.remove());
-
-            // Gold aura glow behind avatar
             const aura = document.createElement('div');
             aura.className = 'owner-png-aura';
             wrap.appendChild(aura);
 
-            // PNG frame overlay on top
             const frameImg = document.createElement('img');
             frameImg.className = 'owner-png-frame';
             frameImg.src = 'owner-avatar.png';
             frameImg.alt = '';
             wrap.appendChild(frameImg);
 
+        } else if (equippedFrame) {
+            // CSS-based frame (store, admin, mod etc)
+            wrap.className = `avatar-wrap ${equippedFrame}`;
         } else {
-            // CSS frames for admin, mod, store frames
-            let frameClass = 'frame-none';
-            if (role === 'admin')        frameClass = 'frame-admin';
-            else if (role === 'mod')     frameClass = 'frame-mod';
-            else if (data.equippedFrame) frameClass = data.equippedFrame;
-            wrap.className = `avatar-wrap ${frameClass}`;
+            // No frame
+            wrap.className = 'avatar-wrap frame-none';
         }
     }
 
@@ -173,10 +173,6 @@ function renderProfile(uid, data) {
     }
 
     // ── Currency ───────────────────────────────────────────────────────────
-    const coinEl    = document.getElementById('coinAmount');
-    const diamondEl = document.getElementById('diamondAmount');
-    if (coinEl)    coinEl.textContent    = (data.coins    || 0).toLocaleString();
-    if (diamondEl) diamondEl.textContent = (data.diamonds || 0).toLocaleString();
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const followersEl = document.getElementById('statFollowers');

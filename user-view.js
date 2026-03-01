@@ -301,16 +301,33 @@ function renderProfile(uid, data) {
     const dot = document.getElementById('onlineDot');
     if (dot) dot.style.display = data.isOnline ? 'block' : 'none';
 
-    // Frame
+    // Frame — reads equippedFrame from Firebase dynamically
     const wrap = document.getElementById('avatarWrap');
     if (wrap) {
-        let frameClass = 'frame-none';
-        const role = (uid === OWNER_UID) ? 'owner' : (data.role || 'member');
-        if      (role === 'owner') frameClass = 'frame-owner';
-        else if (role === 'admin') frameClass = 'frame-admin';
-        else if (role === 'mod')   frameClass = 'frame-mod';
-        else if (data.equippedFrame) frameClass = data.equippedFrame;
-        wrap.className = `avatar-wrap ${frameClass}`;
+        wrap.querySelectorAll('.owner-png-aura, .owner-png-frame').forEach(el => el.remove());
+        document.body.classList.remove('owner-frame-active');
+
+        const equippedFrame = data.equippedFrame || null;
+
+        if (equippedFrame === 'frame-owner') {
+            wrap.className = 'avatar-wrap frame-owner-png';
+            document.body.classList.add('owner-frame-active');
+
+            const aura = document.createElement('div');
+            aura.className = 'owner-png-aura';
+            wrap.appendChild(aura);
+
+            const frameImg = document.createElement('img');
+            frameImg.className = 'owner-png-frame';
+            frameImg.src = 'owner-avatar.png';
+            frameImg.alt = '';
+            wrap.appendChild(frameImg);
+
+        } else if (equippedFrame) {
+            wrap.className = `avatar-wrap ${equippedFrame}`;
+        } else {
+            wrap.className = 'avatar-wrap frame-none';
+        }
     }
 
     // Name

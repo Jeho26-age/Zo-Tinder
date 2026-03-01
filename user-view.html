@@ -200,6 +200,44 @@
 
         .frame-none { }
 
+        /* ── OWNER PNG FRAME ── */
+        .frame-owner-png { overflow: visible !important; }
+
+        .owner-png-aura {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(255,200,0,0.25) 0%, rgba(255,150,0,0.08) 50%, transparent 70%);
+            filter: blur(18px);
+            z-index: 1; pointer-events: none;
+            animation: ownerAuraPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes ownerAuraPulse {
+            0%,100% { opacity:0.7; transform:translate(-50%,-50%) scale(1); }
+            50%      { opacity:1;   transform:translate(-50%,-50%) scale(1.1); }
+        }
+
+        .owner-png-frame {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 425px; height: 232px;
+            transform: translate(-50%, calc(-50% - 4px));
+            z-index: 10; pointer-events: none;
+            animation: ownerWingBreath 4s ease-in-out infinite;
+        }
+
+        @keyframes ownerWingBreath {
+            0%,100% { filter: drop-shadow(0 0 8px rgba(255,200,0,0.4)); }
+            50%      { filter: drop-shadow(0 0 16px rgba(255,200,0,0.7)); }
+        }
+
+        /* Push name down when owner frame active */
+        body.owner-frame-active .name-row { margin-top: 68px; }
+        body.owner-frame-active .profile-location { margin-top: 10px; }
+
         .avatar-frame {
             position: absolute; top: 50%; left: 50%;
             width: 138px; height: 138px;

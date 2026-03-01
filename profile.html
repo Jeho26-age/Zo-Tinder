@@ -229,25 +229,36 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            /* 
-               PNG is 1408×768. Circle in PNG is ~40% of width, centered horizontally.
-               Avatar is 120px → frame width = 120 / 0.40 = 300px
-               Frame height = 300 × (768/1408) = 164px
-               Circle center is ~43% from top → 164 × 0.43 = 70px from top
-               Avatar center = 60px from top of wrap → shift up by (70-60) = 10px
+            /*
+               Measured from PNG (1408×768):
+               Circle inner width: 397px (x=506 to x=903)
+               Circle inner height: 394px (y=199 to y=593)
+               Circle center: (704, 396) = (50%, 51.6%)
+               Scale = 120px avatar / 397px circle = 0.302
+               Frame: 1408×0.302 = 425px wide, 768×0.302 = 232px tall
+               Circle center in frame: 51.6% × 232 = 120px from top
+               Avatar center at 116px → shift frame up 4px
             */
-            width: 310px;
-            height: 169px;
+            width: 425px;
+            height: 232px;
             transform: translate(-50%, calc(-50% - 4px));
             z-index: 10;
             pointer-events: none;
-            /* Subtle breathing animation on wings */
             animation: ownerWingBreath 4s ease-in-out infinite;
         }
 
         @keyframes ownerWingBreath {
             0%,100% { filter: drop-shadow(0 0 8px rgba(255,200,0,0.4)); }
             50%      { filter: drop-shadow(0 0 16px rgba(255,200,0,0.7)); }
+        }
+
+        /* Push name + location down when owner PNG frame is active */
+        /* Frame overflows ~60px below avatar wrap — add enough gap */
+        body.owner-frame-active .name-row {
+            margin-top: 68px;
+        }
+        body.owner-frame-active .profile-location {
+            margin-top: 10px;
         }
 
         /* ── FRAME BASE ── all frames are absolute positioned ring behind avatar ── */
@@ -798,49 +809,7 @@
             font-size: 18px;
         }
 
-        /* ══ CURRENCY ROW ═══════════════════════════════════════ */
-        .currency-row {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            margin-top: 12px;
-        }
 
-        .currency-card {
-            flex: 1;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .currency-card.coins { border-color: rgba(245,200,66,0.15); }
-        .currency-card.diamonds { border-color: rgba(0,242,255,0.15); }
-
-        .currency-icon { font-size: 1.4rem; flex-shrink: 0; }
-
-        .currency-info { display: flex; flex-direction: column; }
-
-        .currency-amount {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.3rem;
-            line-height: 1;
-        }
-
-        .currency-card.coins .currency-amount { color: var(--gold); }
-        .currency-card.diamonds .currency-amount { color: var(--accent); }
-
-        .currency-name {
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--sub);
-            margin-top: 2px;
-        }
 
         /* ══ LOAD ANIMATIONS ════════════════════════════════════ */
         .fade-up {
@@ -975,23 +944,7 @@
         <span id="locationText"></span>
     </div>
 
-    <!-- Currency row -->
-    <div class="currency-row fade-up">
-        <div class="currency-card coins">
-            <div class="currency-icon">🪙</div>
-            <div class="currency-info">
-                <div class="currency-amount" id="coinAmount">0</div>
-                <div class="currency-name">Golden Coins</div>
-            </div>
-        </div>
-        <div class="currency-card diamonds">
-            <div class="currency-icon">💎</div>
-            <div class="currency-info">
-                <div class="currency-amount" id="diamondAmount">0</div>
-                <div class="currency-name">Diamonds</div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Stats -->
     <div class="stats-row fade-up">

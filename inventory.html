@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zo-Tinder | Inventory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent:  #00f2ff;
+            --gold:    #f5c842;
+            --green:   #00e676;
+            --bg:      #080808;
+            --panel:   #111117;
+            --panel2:  #16161e;
+            --border:  rgba(255,255,255,0.06);
+            --text:    #ffffff;
+            --sub:     #555;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            /* bottom padding for the fixed bottom bar */
+            padding-bottom: 100px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 15% 20%, rgba(245,200,66,0.03) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 85% 70%, rgba(167,139,250,0.02) 0%, transparent 60%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ══ TOP BAR ══════════════════════════════════════════════════════════ */
+        .top-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 48px 18px 14px;
+            display: flex; align-items: center; gap: 12px;
+            background: linear-gradient(to bottom, var(--bg) 65%, transparent);
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: white; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.12); }
+
+        .top-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4rem; letter-spacing: 2px;
+        }
+
+        /* ══ FRAME / BUBBLE TABS ══════════════════════════════════════════════ */
+        .main-tabs {
+            position: fixed; top: 108px; left: 0; right: 0;
+            display: flex; gap: 0;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            z-index: 99; padding: 0 18px;
+        }
+
+        .main-tab {
+            flex: 1; padding: 12px 0;
+            font-size: 13px; font-weight: 900;
+            color: var(--sub); cursor: pointer;
+            border: none; background: none;
+            position: relative; transition: color 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .main-tab.active { color: var(--text); }
+        .main-tab.active::after {
+            content: '';
+            position: absolute; bottom: -1px; left: 20%; right: 20%;
+            height: 2px; background: var(--gold); border-radius: 2px;
+        }
+
+        /* ══ CONTENT ══════════════════════════════════════════════════════════ */
+        .content {
+            padding: 170px 16px 0;
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* ══ CATEGORY TABS ════════════════════════════════════════════════════ */
+        .cat-tabs {
+            display: flex; gap: 8px;
+            overflow-x: auto; scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+        .cat-tabs::-webkit-scrollbar { display: none; }
+
+        .cat-tab {
+            flex-shrink: 0;
+            padding: 7px 16px; border-radius: 20px;
+            font-size: 11px; font-weight: 900;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--sub); cursor: pointer;
+            transition: all 0.18s; white-space: nowrap;
+        }
+        .cat-tab.active {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            color: var(--text);
+        }
+
+        /* ══ SECTION LABEL ════════════════════════════════════════════════════ */
+        .section-label {
+            font-size: 10px; font-weight: 900;
+            letter-spacing: 1.8px; text-transform: uppercase;
+            color: #2a2a2a; padding-left: 2px;
+        }
+        .section-label.gold { color: rgba(245,200,66,0.5); }
+
+        /* ══ ITEMS GRID ═══════════════════════════════════════════════════════ */
+        .items-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* ══ ITEM CARD ════════════════════════════════════════════════════════ */
+        .item-card {
+            background: var(--panel);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .item-card:active { transform: scale(0.97); }
+
+        /* Selected state — user tapped, ready to equip */
+        .item-card.selected {
+            border-color: rgba(0,230,118,0.5);
+            box-shadow: 0 0 18px rgba(0,230,118,0.1);
+        }
+
+        /* Equipped state */
+        .item-card.equipped {
+            border-color: rgba(245,200,66,0.45);
+            box-shadow: 0 0 18px rgba(245,200,66,0.08);
+        }
+
+        /* Equipped label on card */
+        .card-equipped-label {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 9px; font-weight: 900; letter-spacing: 0.4px;
+            text-transform: uppercase;
+            background: rgba(245,200,66,0.12);
+            border: 1px solid rgba(245,200,66,0.35);
+            color: var(--gold); padding: 3px 8px; border-radius: 20px;
+            z-index: 5; display: none;
+        }
+        .item-card.equipped .card-equipped-label { display: block; }
+
+        /* Exclusive badge */
+        .card-exclusive-badge {
+            position: absolute; top: 10px; right: 10px;
+            font-size: 9px; font-weight: 900;
+            background: rgba(245,200,66,0.08);
+            border: 1px solid rgba(245,200,66,0.2);
+            color: rgba(245,200,66,0.6);
+            padding: 3px 8px; border-radius: 20px; z-index: 5;
+        }
+
+        /* ══ PREVIEW BOX ══════════════════════════════════════════════════════ */
+        .preview-box {
+            height: 140px;
+            background: #0a0a10;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: visible;
+        }
+
+        /* ── Frame preview ── */
+        .fp-wrap {
+            position: relative; width: 56px; height: 56px;
+        }
+        .fp-avatar {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, #1a1a2e, #16162a);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; position: relative; z-index: 3;
+        }
+        /* Default frame preview — plain dashed ring */
+        .fp-default-ring {
+            position: absolute; inset: -4px; border-radius: 50%;
+            border: 1.5px dashed rgba(255,255,255,0.1);
+            z-index: 2;
+        }
+        /* Owner PNG frame preview */
+        .fp-owner-img {
+            position: absolute; top: 50%; left: 50%;
+            width: 145px; height: 79px;
+            transform: translate(-50%, calc(-50% - 2px));
+            z-index: 10; pointer-events: none;
+            animation: wingBreath 4s ease-in-out infinite;
+        }
+        .fp-owner-aura {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 76px; height: 76px; border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(255,200,0,0.28) 0%, transparent 70%);
+            filter: blur(10px); z-index: 1; pointer-events: none;
+            animation: auraPulse 3s ease-in-out infinite;
+        }
+        @keyframes wingBreath {
+            0%,100% { filter: drop-shadow(0 0 5px rgba(255,200,0,0.35)); }
+            50%      { filter: drop-shadow(0 0 12px rgba(255,200,0,0.75)); }
+        }
+        @keyframes auraPulse {
+            0%,100% { opacity:0.6; transform:translate(-50%,-50%) scale(1); }
+            50%      { opacity:1;   transform:translate(-50%,-50%) scale(1.12); }
+        }
+
+        /* ── Bubble preview ── */
+        .bp-wrap {
+            padding: 10px; width: 100%;
+            display: flex; justify-content: flex-end;
+        }
+
+        /* Default bubble preview */
+        .bp-default {
+            max-width: 110px; padding: 8px 10px;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 13px 3px 13px 13px;
+            font-size: 11px; font-weight: 700;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Owner bubble preview */
+        @property --ba { syntax:"<angle>"; initial-value:0deg; inherits:false; }
+
+        .bp-owner {
+            position: relative; max-width: 120px;
+            padding: 8px 10px;
+            border-radius: 13px 3px 13px 13px;
+            font-size: 11px; font-weight: 800;
+            color: #1a0e00; isolation: isolate;
+            background: linear-gradient(135deg, #fff8c0 0%, #f5c842 25%, #e8a800 50%, #f5c842 75%, #fff0a0 100%);
+            box-shadow: 0 0 0 1px rgba(255,220,80,0.6), 0 0 12px rgba(245,190,50,0.5);
+            animation: bpGlow 2.5s ease-in-out infinite;
+        }
+        @keyframes bpGlow {
+            0%,100% { box-shadow: 0 0 0 1px rgba(255,220,80,0.6), 0 0 10px rgba(245,190,50,0.4); }
+            50%      { box-shadow: 0 0 0 1.5px rgba(255,240,100,0.9), 0 0 22px rgba(245,190,50,0.8); }
+        }
+        .bp-owner::before {
+            content:''; position:absolute; inset:0; border-radius:inherit;
+            background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%);
+            background-size:200% 100%; animation:bpShimmer 2.2s ease-in-out infinite;
+            pointer-events:none; z-index:1;
+        }
+        @keyframes bpShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        .bp-owner::after {
+            content:''; position:absolute; inset:-1.5px;
+            border-radius: calc(13px + 1.5px) calc(3px + 1.5px) calc(13px + 1.5px) calc(13px + 1.5px);
+            background: conic-gradient(from var(--ba,0deg), transparent 0%, rgba(255,248,100,0.9) 8%, rgba(245,190,50,0.6) 18%, transparent 28%, transparent 55%, rgba(255,220,60,0.7) 65%, rgba(255,248,100,0.5) 72%, transparent 80%);
+            z-index:-1; animation:bpSpin 3s linear infinite; filter:blur(0.5px);
+        }
+        @keyframes bpSpin { to{--ba:360deg} }
+        .bp-owner .bpo-crown {
+            position:absolute; top:-8px; right:6px; font-size:11px; z-index:5;
+            filter:drop-shadow(0 0 4px rgba(245,190,50,0.9));
+            animation:crownBob 2.5s ease-in-out infinite;
+        }
+        @keyframes crownBob {
+            0%,100%{transform:translateY(0) rotate(-5deg)}
+            50%{transform:translateY(-2px) rotate(5deg)}
+        }
+        .bp-owner .bpo-text { position:relative; z-index:2; }
+        .bp-owner .bpo-line {
+            display:block; height:1px;
+            background:linear-gradient(90deg,transparent,rgba(120,70,0,0.3),transparent);
+            margin:4px -10px 3px; position:relative; z-index:2;
+        }
+        .bp-owner .bpo-ts {
+            display:block; font-size:8px; font-weight:700;
+            color:rgba(80,40,0,0.55); text-align:right; position:relative; z-index:2;
+        }
+
+        /* ══ CARD FOOTER ══════════════════════════════════════════════════════ */
+        .card-footer {
+            padding: 10px 12px 12px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+
+        .card-name {
+            font-size: 12px; font-weight: 900; color: white;
+        }
+
+        /* Equip button — hidden by default, shown when selected */
+        .card-equip-btn {
+            width: 100%; padding: 8px 0;
+            border-radius: 10px; border: none;
+            background: var(--green);
+            color: #000;
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px; font-weight: 900;
+            cursor: pointer; display: none;
+            transition: opacity 0.15s;
+            letter-spacing: 0.3px;
+        }
+        .card-equip-btn:active { opacity: 0.85; }
+        .item-card.selected .card-equip-btn { display: block; }
+
+        /* When already equipped — show unequip button instead */
+        .card-unequip-btn {
+            width: 100%; padding: 8px 0;
+            border-radius: 10px;
+            border: 1px solid rgba(245,200,66,0.3);
+            background: rgba(245,200,66,0.06);
+            color: var(--gold);
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px; font-weight: 900;
+            cursor: pointer; display: none;
+            transition: opacity 0.15s;
+        }
+        .card-unequip-btn:active { opacity: 0.85; }
+        .item-card.equipped.selected .card-equip-btn  { display: none; }
+        .item-card.equipped.selected .card-unequip-btn { display: block; }
+        .item-card.equipped:not(.selected) .card-unequip-btn { display: none; }
+
+        /* ══ BOTTOM BAR — currently equipped ═════════════════════════════════ */
+        .bottom-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 12px 18px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            background: rgba(10,10,14,0.97);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            z-index: 200;
+            display: flex; align-items: center; gap: 14px;
+        }
+
+        .bottom-bar-label {
+            font-size: 9px; font-weight: 900;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: #2a2a2a; flex-shrink: 0;
+        }
+
+        .bottom-equipped {
+            display: flex; align-items: center; gap: 14px; flex: 1;
+        }
+
+        .bottom-item {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* Mini frame preview in bottom bar */
+        .bottom-frame-wrap {
+            position: relative; width: 36px; height: 36px; flex-shrink: 0;
+        }
+        .bottom-frame-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--panel2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; position: relative; z-index: 3;
+            border: 1.5px solid rgba(255,255,255,0.06);
+        }
+        .bottom-owner-frame-img {
+            position: absolute; top: 50%; left: 50%;
+            width: 92px; height: 50px;
+            transform: translate(-50%, calc(-50% - 1px));
+            z-index: 10; pointer-events: none;
+            animation: wingBreath 4s ease-in-out infinite;
+        }
+        .bottom-default-ring {
+            position: absolute; inset: -3px; border-radius: 50%;
+            border: 1px dashed rgba(255,255,255,0.08); z-index: 2;
+        }
+
+        /* Mini bubble preview in bottom bar */
+        .bottom-bubble-mini {
+            padding: 5px 9px;
+            border-radius: 10px 2px 10px 10px;
+            font-size: 10px; font-weight: 800;
+        }
+        .bottom-bubble-default {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            color: rgba(255,255,255,0.3);
+        }
+        .bottom-bubble-owner {
+            background: linear-gradient(135deg, #fff8c0 0%, #f5c842 40%, #e8a800 100%);
+            color: #1a0e00;
+            box-shadow: 0 0 10px rgba(245,190,50,0.4);
+            animation: bpGlow 2.5s ease-in-out infinite;
+        }
+
+        .bottom-divider {
+            width: 1px; height: 28px;
+            background: var(--border); flex-shrink: 0;
+        }
+
+        /* ══ EMPTY STATE ══════════════════════════════════════════════════════ */
+        .empty-state {
+            text-align: center; padding: 48px 20px;
+            color: var(--sub); font-size: 13px; font-weight: 700;
+        }
+        .empty-state .ei { font-size: 2.5rem; margin-bottom: 12px; }
+
+        /* ══ LOADING ══════════════════════════════════════════════════════════ */
+        #loadingOverlay {
+            position: fixed; inset: 0; background: var(--bg);
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+        }
+        .loader-ring {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: var(--gold);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ══ TOAST ════════════════════════════════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--panel); border: 1px solid var(--border);
+            color: white; padding: 11px 18px; border-radius: 14px;
+            font-size: 13px; font-weight: 800; opacity: 0;
+            transition: all 0.25s; z-index: 9999;
+            white-space: nowrap; pointer-events: none;
+        }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .toast.gold  { border-color:rgba(245,200,66,0.4); color:var(--gold); }
+        .toast.error { border-color:rgba(255,62,29,0.3);  color:#ff6b50; }
+
+        /* fade in animation */
+        .fade-up { opacity:0; transform:translateY(12px); animation:fadeUp 0.3s ease forwards; }
+        @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay"><div class="loader-ring"></div></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <a href="profile.html" class="back-btn">←</a>
+    <div class="top-title">Inventory</div>
+</div>
+
+<!-- FRAME / BUBBLE TABS -->
+<div class="main-tabs">
+    <button class="main-tab active" id="mainTabFrames"  onclick="switchMainTab('frames')">🖼️ Frames</button>
+    <button class="main-tab"        id="mainTabBubbles" onclick="switchMainTab('bubbles')">💬 Bubbles</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+    <!-- FRAMES PANEL -->
+    <div id="framesPanel">
+        <!-- Category tabs -->
+        <div class="cat-tabs fade-up" id="frameCatTabs"></div>
+        <!-- Grid -->
+        <div class="items-grid fade-up" id="framesGrid"></div>
+    </div>
+
+    <!-- BUBBLES PANEL -->
+    <div id="bubblesPanel" style="display:none;">
+        <div class="cat-tabs fade-up" id="bubbleCatTabs"></div>
+        <div class="items-grid fade-up" id="bubblesGrid"></div>
+    </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+    <div class="bottom-bar-label">Now</div>
+    <div class="bottom-equipped">
+        <!-- Frame mini preview -->
+        <div class="bottom-item">
+            <div class="bottom-frame-wrap" id="bottomFrameWrap">
+                <div class="bottom-frame-avatar">👤</div>
+                <div class="bottom-default-ring" id="bottomDefaultRing"></div>
+            </div>
+        </div>
+
+        <div class="bottom-divider"></div>
+
+        <!-- Bubble mini preview -->
+        <div class="bottom-item">
+            <div class="bottom-bubble-mini bottom-bubble-default" id="bottomBubble">💬</div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="inventory.js"></script>
+</body>
+</html>
