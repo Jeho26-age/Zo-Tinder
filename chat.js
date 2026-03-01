@@ -435,7 +435,7 @@ function buildMessageRow(msgID, msg, isMine) {
         bubbleInner = buildViewOnceBubble(msgID, msg, isMine);
     } else {
         // Text message
-if (myUID === OWNER_UID) {
+if (msg.from === OWNER_UID) {
     bubbleInner = `
         <div class="bubble-owner">
             <span class="crown-stamp">👑</span>
