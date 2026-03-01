@@ -363,7 +363,7 @@ function renderMessage(key, msg, container) {
         </div>`;
     } else if (msg.type === 'sticker') {
         bubbleContent = `<div style="font-size:3rem;margin-bottom:2px;">${msg.text}</div>`;
-    } else if (msg.senderUid === OWNER_UID) {
+    } else if (msg.uid === OWNER_UID) {
         bubbleContent = `
         <div class="bubble-owner"
             oncontextmenu="window.openMsgMenu(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
