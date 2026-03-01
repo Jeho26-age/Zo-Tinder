@@ -363,6 +363,19 @@ function renderMessage(key, msg, container) {
         </div>`;
     } else if (msg.type === 'sticker') {
         bubbleContent = `<div style="font-size:3rem;margin-bottom:2px;">${msg.text}</div>`;
+    } else if (msg.senderUid === OWNER_UID) {
+        bubbleContent = `
+        <div class="bubble-owner"
+            oncontextmenu="window.openMsgMenu(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
+            ontouchstart="window.startMsgPress(event,this,'${isOwn ? 'own' : 'other'}','${key}')"
+            ontouchend="window.clearMsgPress()" ontouchmove="window.clearMsgPress()">
+            <span class="crown-stamp">👑</span>
+            <span class="orn orn-tl">❧</span>
+            <span class="orn orn-bl">❧</span>
+            <span class="orn orn-br">❧</span>
+            <div class="bubble-content">${replyHTML}${esc(msg.text || '')}</div>
+            <span class="gold-line"></span>
+        </div>`;
     } else {
         bubbleContent = `<div class="bubble ${isOwn ? 'own' : 'other'}"
             oncontextmenu="window.openMsgMenu(event,this,'${isOwn ? 'own' : 'other'}','${key}')"

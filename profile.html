@@ -194,6 +194,62 @@
         /* ── NO FRAME (default new user) ── */
         .frame-none { /* nothing */ }
 
+        /* ── OWNER PNG FRAME ── */
+        /* avatarWrap must allow overflow so wings extend out */
+        .frame-owner-png {
+            overflow: visible !important;
+        }
+
+        /* Gold aura behind avatar */
+        .owner-png-aura {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse,
+                rgba(255,200,0,0.25) 0%,
+                rgba(255,150,0,0.08) 50%,
+                transparent 70%
+            );
+            filter: blur(18px);
+            z-index: 1;
+            pointer-events: none;
+            animation: ownerAuraPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes ownerAuraPulse {
+            0%,100% { opacity:0.7; transform:translate(-50%,-50%) scale(1); }
+            50%      { opacity:1;   transform:translate(-50%,-50%) scale(1.1); }
+        }
+
+        /* PNG frame overlay — sits on top of avatar, wings extend outward */
+        .owner-png-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            /* 
+               PNG is 1408×768. Circle in PNG is ~40% of width, centered horizontally.
+               Avatar is 120px → frame width = 120 / 0.40 = 300px
+               Frame height = 300 × (768/1408) = 164px
+               Circle center is ~43% from top → 164 × 0.43 = 70px from top
+               Avatar center = 60px from top of wrap → shift up by (70-60) = 10px
+            */
+            width: 310px;
+            height: 169px;
+            transform: translate(-50%, calc(-50% - 4px));
+            z-index: 10;
+            pointer-events: none;
+            /* Subtle breathing animation on wings */
+            animation: ownerWingBreath 4s ease-in-out infinite;
+        }
+
+        @keyframes ownerWingBreath {
+            0%,100% { filter: drop-shadow(0 0 8px rgba(255,200,0,0.4)); }
+            50%      { filter: drop-shadow(0 0 16px rgba(255,200,0,0.7)); }
+        }
+
         /* ── FRAME BASE ── all frames are absolute positioned ring behind avatar ── */
         .avatar-frame {
             position: absolute;

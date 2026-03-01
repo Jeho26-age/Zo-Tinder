@@ -24,6 +24,7 @@ const CLOUDINARY_VID    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/v
 
 // ── State ──────────────────────────────────────────────────────────────────
 let currentUid       = null;
+const OWNER_UID      = "MVnZFJvoIGgRYmsWFeUjNHUv0yg1";
 let existingData     = {};
 let selectedLookFor  = '';
 let selectedInterests = new Set();
@@ -149,9 +150,11 @@ window.setCoverType = function(type) {
     const locked = document.getElementById('coverLocked');
 
     if (type === 'video') {
-        // Check if video cover is unlocked from store
+        // App staff (owner/admin/mod) always bypass — no lock
+        const appRole = existingData?.role || 'member';
+        const isAppStaff = currentUid === OWNER_UID || ['owner','admin','mod'].includes(appRole);
         const hasVideoUnlocked = existingData?.storeUnlocks?.coverVideo === true;
-        if (!hasVideoUnlocked) {
+        if (!isAppStaff && !hasVideoUnlocked) {
             if (locked) locked.classList.add('show');
             return;
         }

@@ -1,0 +1,167 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   staff-bubbles.css
+   Role-based chat bubbles — not buyable, assigned by role.
+   Lost instantly when role is removed.
+   Link in any page that renders chat messages.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@property --bubble-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   👑 OWNER BUBBLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.bubble-owner {
+    position: relative;
+    max-width: 260px;
+    padding: 12px 16px;
+    border-radius: 18px 4px 18px 18px;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 800;
+    color: #1a0e00;
+    isolation: isolate;
+    background: linear-gradient(135deg,
+        #fff8c0 0%,
+        #f5c842 25%,
+        #e8a800 50%,
+        #f5c842 75%,
+        #fff0a0 100%
+    );
+    box-shadow:
+        0 0 0 1.5px rgba(255,220,80,0.6),
+        0 0 20px rgba(245,190,50,0.5),
+        0 0 45px rgba(245,190,50,0.2),
+        0 4px 16px rgba(0,0,0,0.6);
+    animation: ownerBubbleGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes ownerBubbleGlow {
+    0%, 100% {
+        box-shadow:
+            0 0 0 1.5px rgba(255,220,80,0.6),
+            0 0 18px rgba(245,190,50,0.5),
+            0 0 40px rgba(245,190,50,0.15),
+            0 4px 16px rgba(0,0,0,0.6);
+    }
+    50% {
+        box-shadow:
+            0 0 0 2px rgba(255,240,100,0.95),
+            0 0 30px rgba(245,190,50,0.85),
+            0 0 70px rgba(245,190,50,0.35),
+            0 4px 16px rgba(0,0,0,0.6);
+    }
+}
+
+/* Shimmer sweep */
+.bubble-owner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        105deg,
+        transparent 30%,
+        rgba(255,255,255,0.55) 50%,
+        transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: ownerShimmer 2.2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes ownerShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Spinning conic border */
+.bubble-owner::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: calc(18px + 2px) calc(4px + 2px) calc(18px + 2px) calc(18px + 2px);
+    background: conic-gradient(
+        from var(--bubble-angle, 0deg),
+        transparent 0%,
+        rgba(255,248,100,0.9) 8%,
+        rgba(245,190,50,0.6) 18%,
+        transparent 28%,
+        transparent 55%,
+        rgba(255,220,60,0.7) 65%,
+        rgba(255,248,100,0.5) 72%,
+        transparent 80%
+    );
+    z-index: -1;
+    animation: ownerBorderSpin 3s linear infinite;
+    filter: blur(1px);
+}
+
+@keyframes ownerBorderSpin {
+    to { --bubble-angle: 360deg; }
+}
+
+/* Content sits above shimmer */
+.bubble-owner .bubble-content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Crown stamp */
+.bubble-owner .crown-stamp {
+    position: absolute;
+    top: -11px;
+    right: 10px;
+    font-size: 16px;
+    z-index: 5;
+    filter: drop-shadow(0 0 6px rgba(245,190,50,0.9));
+    animation: ownerCrownBob 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes ownerCrownBob {
+    0%, 100% { transform: translateY(0)    rotate(-5deg); }
+    50%       { transform: translateY(-3px) rotate(5deg);  }
+}
+
+/* Corner filigree ornaments */
+.bubble-owner .orn {
+    position: absolute;
+    font-size: 11px;
+    opacity: 0.45;
+    color: #7a4f00;
+    pointer-events: none;
+    z-index: 3;
+    line-height: 1;
+}
+.bubble-owner .orn-tl { top: 3px;    left: 5px;                           }
+.bubble-owner .orn-bl { bottom: 3px; left: 5px;  transform: rotate(90deg);  }
+.bubble-owner .orn-br { bottom: 3px; right: 5px; transform: rotate(180deg); }
+
+/* Gold separator line */
+.bubble-owner .gold-line {
+    display: block;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(120,70,0,0.35), transparent);
+    margin: 7px -16px 4px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Timestamp */
+.bubble-owner .ts {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(80,40,0,0.6);
+    text-align: right;
+    position: relative;
+    z-index: 2;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Admin and Mod bubbles — coming later
+   ═══════════════════════════════════════════════════════════════════════════ */

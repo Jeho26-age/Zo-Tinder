@@ -1,6 +1,6 @@
 import { initializeApp }                                               from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getAuth, onAuthStateChanged }                                from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getDatabase, ref, get, set, push, update, remove, onValue, off, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDatabase, ref, get, set, push, update, remove, onValue, off, onDisconnect, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 // ── Firebase config ────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 const CLOUDINARY_UPLOAD_URL    = "https://api.cloudinary.com/v1_1/duj2rx73z/image/upload";
-const CLOUDINARY_UPLOAD_PRESET = "zo_tinder_unsigned";
+const CLOUDINARY_UPLOAD_PRESET = "Zo-Tinder";
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -155,6 +155,13 @@ onAuthStateChanged(auth, async (user) => {
         // Render header
         renderHeader();
         listenOnlineStatus();
+
+        // ── PRESENCE: mark me as online, auto-offline on disconnect ──────
+        const myPresenceRef = ref(db, `users/${myUID}`);
+        const presenceData  = { isOnline: true, lastSeen: Date.now() };
+        await update(myPresenceRef, presenceData);
+        // onDisconnect fires even if app crashes or loses internet
+        onDisconnect(myPresenceRef).update({ isOnline: false, lastSeen: Date.now() });
 
         // Load background
         loadBackground();
@@ -412,10 +419,13 @@ function buildMessageRow(msgID, msg, isMine) {
     if (isDeleted) {
         bubbleInner = `<div class="bubble deleted">🚫 Message deleted</div>`;
     } else if (msg.type === 'sticker') {
-        bubbleInner = `
-            <div class="msg-sticker" onclick="openImgViewer('${esc(msg.stickerURL)}', false)">
-                <img src="${esc(msg.stickerURL)}" alt="sticker">
-            </div>`;
+        // Detect if stickerURL is a real URL or just an emoji string
+        const isRealURL = msg.stickerURL && (msg.stickerURL.startsWith('http') || msg.stickerURL.startsWith('data:'));
+        bubbleInner = isRealURL
+            ? `<div class="msg-sticker" onclick="openImgViewer('${esc(msg.stickerURL)}', false)">
+                   <img src="${esc(msg.stickerURL)}" alt="sticker" loading="lazy">
+               </div>`
+            : `<div class="msg-sticker-emoji">${esc(msg.stickerURL)}</div>`;
     } else if (msg.type === 'image') {
         bubbleInner = `
             <div class="msg-image" onclick="openImgViewer('${esc(msg.imageURL)}', true)">
@@ -425,8 +435,22 @@ function buildMessageRow(msgID, msg, isMine) {
         bubbleInner = buildViewOnceBubble(msgID, msg, isMine);
     } else {
         // Text message
-        bubbleInner = `<div class="bubble">${esc(msg.text)}</div>`;
-    }
+if (myUID === OWNER_UID) {
+    bubbleInner = `
+        <div class="bubble-owner">
+            <span class="crown-stamp">👑</span>
+            <span class="orn orn-tl">❧</span>
+            <span class="orn orn-bl">❧</span>
+            <span class="orn orn-br">❧</span>
+            <div class="bubble-content">${esc(msg.text)}</div>
+            <span class="gold-line"></span>
+            <span class="ts">${formatTime(msg.time)} ✓✓</span>
+        </div>`;
+} else {
+    bubbleInner = `<div class="bubble">${esc(msg.text)}</div>`;
+}
+}
+    
 
     // Reactions
     let reactionsHTML = '';
@@ -732,7 +756,8 @@ async function setupStickerPanel() {
             const item = e.target.closest('.sticker-item');
             if (!item) return;
             panel?.classList.remove('open');
-            sendMessage({ type: 'sticker', stickerURL: item.dataset.sticker });
+            // Default stickers are emoji — store as stickerURL but flag as emoji
+            sendMessage({ type: 'sticker', stickerURL: item.dataset.sticker, isEmoji: true });
         });
     }
 
@@ -1061,6 +1086,7 @@ function setupBgPicker() {
                 if (url) {
                     customBgURL = url;
                     applyBackground('custom');
+                    updateBgSelected();
                     saveBgToFirebase('custom', url);
                     closeOverlay('bgPickerOverlay');
                 }
@@ -1164,27 +1190,61 @@ function updateBgSelected() {
 
 async function saveBgToFirebase(theme, imageURL) {
     try {
-        await update(ref(db, `users/${myUID}/chatThemes/${chatID}`), {
-            type:     theme === 'custom' ? 'custom' : 'preset',
+        // Save to shared chat node — both users see the same theme
+        await update(ref(db, `chats/${chatID}/theme`), {
+            type:      theme === 'custom' ? 'custom' : 'preset',
             theme,
-            imageURL: imageURL || null,
-            opacity:  customDim
+            imageURL:  imageURL || null,
+            opacity:   customDim,
+            setBy:     myUID,
+            setAt:     Date.now()
         });
-    } catch(e) { /* silently */ }
+    } catch(e) { console.error('saveBg error:', e); }
 }
 
-async function loadBackground() {
-    try {
-        const snap = await get(ref(db, `users/${myUID}/chatThemes/${chatID}`));
-        if (!snap.exists()) return;
-        const data = snap.val();
-        currentBg  = data.theme || 'black';
-        customDim  = data.opacity ?? 0.5;
+// ── PAGE VISIBILITY — update presence when user switches tabs ────────────
+document.addEventListener('visibilitychange', async () => {
+    if (!myUID) return;
+    const presenceRef = ref(db, `users/${myUID}`);
+    if (document.hidden) {
+        await update(presenceRef, { isOnline: false, lastSeen: Date.now() });
+    } else {
+        await update(presenceRef, { isOnline: true, lastSeen: Date.now() });
+    }
+});
+
+// ── BEFORE UNLOAD — best-effort sync presence ─────────────────────────────
+window.addEventListener('beforeunload', () => {
+    if (!myUID) return;
+    // Use sendBeacon for reliability on page close
+    const url = `https://zo-tinder-default-rtdb.asia-southeast1.firebasedatabase.app/users/${myUID}.json`;
+    const blob = new Blob([JSON.stringify({ isOnline: false, lastSeen: Date.now() })], { type: 'application/json' });
+    navigator.sendBeacon(url + '?x-http-method-override=PATCH', blob);
+});
+
+function loadBackground() {
+    // Use onValue — realtime listener so both users always see same theme
+    const themeRef = ref(db, `chats/${chatID}/theme`);
+    onValue(themeRef, (snap) => {
+        if (!snap.exists()) {
+            // No theme set yet — apply default black
+            applyBackground('black');
+            updateBgSelected();
+            return;
+        }
+        const data  = snap.val();
+        currentBg   = data.theme || 'black';
+        customDim   = data.opacity ?? 0.5;
+
         if (data.type === 'custom' && data.imageURL) {
             customBgURL = data.imageURL;
-            document.getElementById('dimSlider').value = customDim * 100;
+            const slider = document.getElementById('dimSlider');
+            if (slider) slider.value = customDim * 100;
+        } else {
+            customBgURL = null;
         }
+
         applyBackground(currentBg);
         updateBgSelected();
-    } catch(e) { /* silently */ }
+    });
 }

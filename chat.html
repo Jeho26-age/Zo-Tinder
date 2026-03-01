@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Zo-Tinder | Chat</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="staff-bubbles.css">
     <style>
         /* ══ ROOT ══════════════════════════════════════════════ */
         :root {
@@ -472,6 +473,15 @@
         .view-once-opened { color: var(--sub) !important; cursor: default; }
 
         /* ── Sticker bubble ── */
+        .msg-sticker-emoji {
+            font-size: 3.2rem;
+            line-height: 1;
+            padding: 4px 2px;
+            cursor: default;
+            display: inline-block;
+            user-select: none;
+        }
+
         .msg-sticker {
             width: 100px; height: 100px;
             cursor: pointer; transition: transform 0.15s;
