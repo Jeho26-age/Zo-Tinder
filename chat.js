@@ -86,17 +86,40 @@ function formatDateLabel(ts) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function getFrameClass(uid, data, prefix = 'hf') {
+function applyFrame(wrapEl, uid, data) {
+    if (!wrapEl) return;
+
+    // Clean up any previous owner PNG elements
+    wrapEl.querySelectorAll('.owner-png-aura, .owner-png-frame').forEach(el => el.remove());
+
+    const equippedFrame = data?.equippedFrame || null;
     const role = (uid === OWNER_UID) ? 'owner' : (data?.role || 'member');
-    // Owner frame is UID-locked — always gold
-    if (role === 'owner') return `${prefix}-owner`;
-    // Equipped frame takes priority over role-based frame
-    const eq = data?.equippedFrame || '';
-    if (eq) return `${prefix}-${eq.replace('frame-', '')}`;
-    // Fall back to role frame if nothing equipped
-    if (role === 'admin') return `${prefix}-admin`;
-    if (role === 'mod')   return `${prefix}-mod`;
-    return `${prefix}-none`;
+
+    if (equippedFrame === 'frame-owner' || role === 'owner') {
+        // PNG frame — same logic as user-view.js
+        wrapEl.className = 'header-avatar-wrap frame-owner-png';
+
+        const aura = document.createElement('div');
+        aura.className = 'owner-png-aura';
+        wrapEl.appendChild(aura);
+
+        const frameImg = document.createElement('img');
+        frameImg.className = 'owner-png-frame';
+        frameImg.src = 'owner-avatar.png';
+        frameImg.alt = '';
+        wrapEl.appendChild(frameImg);
+
+    } else if (equippedFrame) {
+        // e.g. "frame-fire", "frame-aurora" — matches Firebase value directly
+        wrapEl.className = `header-avatar-wrap ${equippedFrame}`;
+
+    } else if (role === 'admin') {
+        wrapEl.className = 'header-avatar-wrap frame-admin';
+    } else if (role === 'mod') {
+        wrapEl.className = 'header-avatar-wrap frame-mod';
+    } else {
+        wrapEl.className = 'header-avatar-wrap frame-none';
+    }
 }
 
 function getBubbleStyle(data, uid) {
@@ -242,22 +265,18 @@ async function ensureChatExists() {
 
 // ── RENDER HEADER ──────────────────────────────────────────────────────────
 function renderHeader() {
-    // Avatar
+    // Target avatar photo
     const avatarEl = document.getElementById('headerAvatarImg');
     if (avatarEl) {
         if (targetData.photoURL) {
-            avatarEl.innerHTML = `<img src="${esc(targetData.photoURL)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">`;
+            avatarEl.innerHTML = `<img src="${esc(targetData.photoURL)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">`;
         } else {
             avatarEl.textContent = targetData.username?.[0] || '?';
         }
     }
 
-    // Frame
-    const wrapEl = document.getElementById('headerAvatarWrap');
-    if (wrapEl) {
-        const fc = getFrameClass(targetUID, targetData, 'hf');
-        wrapEl.className = `header-avatar-wrap ${fc}`;
-    }
+    // Target frame — uses same logic as user-view.js
+    applyFrame(document.getElementById('headerAvatarWrap'), targetUID, targetData);
 
     // Name
     document.getElementById('headerName').textContent = targetData.username || 'User';
