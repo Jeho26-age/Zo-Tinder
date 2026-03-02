@@ -297,7 +297,12 @@ function listenOnlineStatus() {
     const statusRef = ref(db, `users/${targetUID}`);
     onValue(statusRef, (snap) => {
         const data = snap.val() || {};
-        const el   = document.getElementById('headerStatus');
+
+        // Re-apply frame whenever user data changes (e.g. they equip/unequip)
+        targetData = { ...targetData, ...data };
+        applyFrame(document.getElementById('headerAvatarWrap'), targetUID, targetData);
+
+        const el = document.getElementById('headerStatus');
         if (!el) return;
         if (data.isOnline) {
             el.textContent = '🟢 Online';
@@ -423,7 +428,10 @@ function renderMessages(snap) {
 function buildMessageRow(msgID, msg, isMine) {
     const bubbleStyle = isMine ? myBubbleStyle : theirBubbleStyle;
     const row = document.createElement('div');
-    row.className = `msg-row ${isMine ? 'mine' : ''} ${bubbleStyle}`;
+    // Don't put bubble-owner on the row — it causes double styling
+    // The inner <div class="bubble-owner"> already handles the visual
+    const rowStyle = bubbleStyle === 'bubble-owner' ? 'bs-owner' : bubbleStyle;
+    row.className = `msg-row ${isMine ? 'mine' : ''} ${rowStyle}`;
     row.dataset.msgid = msgID;
 
     // Build message row — no avatar, pure bubbles
