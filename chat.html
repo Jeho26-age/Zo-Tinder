@@ -111,107 +111,44 @@
         .back-btn:active { background: rgba(255,255,255,0.12); }
 
         /* Header avatar wrap — centered, with space for frame overflow */
-        /* ── Header avatar + frame (same system as user-view.html) ── */
         .header-avatar-wrap {
             position: relative;
-            width: 60px; height: 60px;
+            width: 52px; height: 52px;
             cursor: pointer; flex-shrink: 0;
+            margin-top: 0;
         }
 
         .header-avatar-img {
-            width: 52px; height: 52px; border-radius: 50%;
-            background: var(--panel2);
+            width: 48px; height: 48px; border-radius: 50%;
+            object-fit: cover; background: var(--panel2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; font-weight: 900;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 3; border: 2px solid var(--bg); overflow: hidden;
+            font-size: 1.4rem; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 3;
+            border: 2px solid var(--bg); overflow: hidden;
         }
         .header-avatar-img img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
 
-        /* The frame ring — same element name as user-view */
-        .avatar-frame {
+        .header-frame {
             position: absolute; top: 50%; left: 50%;
-            width: 60px; height: 60px; border-radius: 50%;
+            width: 58px; height: 58px; border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 2; pointer-events: none;
         }
 
-        /* frame- classes match exactly what's stored in Firebase */
-        .frame-none .avatar-frame { display: none; }
-
-        .frame-default .avatar-frame {
-            border: 3px solid var(--accent);
-            box-shadow: 0 0 16px var(--accent), inset 0 0 8px rgba(0,242,255,0.2);
-            animation: hf-spin 4s linear infinite;
-        }
-        .frame-owner .avatar-frame {
-            background: conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842,#fff176,#f5c842,#ffd700,#ff8c00,#f5c842);
-            padding: 3px; animation: hf-spin 3s linear infinite;
-            box-shadow: 0 0 24px rgba(245,200,66,0.6), 0 0 48px rgba(245,200,66,0.2);
-        }
-        .frame-owner .avatar-frame::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--bg); }
-        .frame-owner .avatar-frame::before {
-            content:''; position:absolute; inset:-4px; border-radius:50%;
-            background: conic-gradient(transparent 0deg, rgba(245,200,66,0.4) 60deg, transparent 120deg);
-            animation: hf-spin 2s linear infinite reverse;
-        }
-        .frame-admin .avatar-frame {
-            background: conic-gradient(#ff3e1d,#ff6b00,#ff3e1d,#ff0060,#ff3e1d,#ff6b00,#ff3e1d);
-            padding: 3px; animation: hf-spin 2s linear infinite;
-            box-shadow: 0 0 20px rgba(255,62,29,0.7), 0 0 40px rgba(255,62,29,0.2);
-        }
-        .frame-admin .avatar-frame::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--bg); }
-        .frame-mod .avatar-frame {
-            border: 3px solid var(--accent2);
-            box-shadow: 0 0 16px rgba(167,139,250,0.6), inset 0 0 8px rgba(167,139,250,0.2);
-            animation: hf-spin 5s linear infinite;
-        }
-        .frame-fire .avatar-frame {
-            background: conic-gradient(#ff4500,#ff8c00,#ffd700,#ff8c00,#ff4500,#cc0000,#ff4500);
-            padding: 3px; animation: hf-spin 1.5s linear infinite;
-            box-shadow: 0 0 24px rgba(255,69,0,0.8), 0 0 48px rgba(255,140,0,0.3);
-        }
-        .frame-fire .avatar-frame::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--bg); }
-        .frame-aurora .avatar-frame {
-            background: conic-gradient(#00f2ff,#a78bfa,#00ff88,#00f2ff,#ff6bff,#a78bfa,#00f2ff);
-            padding: 3px; animation: hf-spin 6s linear infinite;
-            box-shadow: 0 0 24px rgba(0,242,255,0.4), 0 0 48px rgba(167,139,250,0.2);
-        }
-        .frame-aurora .avatar-frame::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--bg); }
-        .frame-galaxy .avatar-frame {
-            border: 3px solid transparent;
-            background: linear-gradient(var(--bg),var(--bg)) padding-box,
-                        conic-gradient(#0d0d2b,#4a00e0,#8e2de2,#00c9ff,#4a00e0,#0d0d2b) border-box;
-            animation: hf-spin 8s linear infinite;
-            box-shadow: 0 0 16px rgba(74,0,224,0.5), 0 0 32px rgba(0,201,255,0.2);
-        }
-
-        /* Owner PNG frame — same as user-view */
-        .frame-owner-png { overflow: visible !important; }
-        .owner-png-aura {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70px; height: 70px; border-radius: 50%;
-            background: radial-gradient(ellipse, rgba(255,200,0,0.25) 0%, rgba(255,150,0,0.08) 50%, transparent 70%);
-            filter: blur(10px); z-index: 1; pointer-events: none;
-            animation: ownerAuraPulse 3s ease-in-out infinite;
-        }
-        .owner-png-frame {
-            position: absolute; top: 50%; left: 50%;
-            width: 150px; height: 82px;
-            transform: translate(-50%, calc(-50% - 2px));
-            z-index: 10; pointer-events: none;
-            animation: ownerWingBreath 4s ease-in-out infinite;
-        }
-        @keyframes ownerAuraPulse {
-            0%,100% { opacity:0.7; transform:translate(-50%,-50%) scale(1); }
-            50%      { opacity:1;   transform:translate(-50%,-50%) scale(1.1); }
-        }
-        @keyframes ownerWingBreath {
-            0%,100% { filter: drop-shadow(0 0 6px rgba(255,200,0,0.4)); }
-            50%      { filter: drop-shadow(0 0 14px rgba(255,200,0,0.7)); }
-        }
+        /* Frame ring styles */
+        .hf-owner .header-frame { background: conic-gradient(#f5c842,#ffd700,#ff8c00,#f5c842,#fff176,#f5c842); padding:2px; animation:hf-spin 3s linear infinite; box-shadow:0 0 14px rgba(245,200,66,0.6); }
+        .hf-owner .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .hf-admin .header-frame { background: conic-gradient(#ff3e1d,#ff6b00,#ff3e1d,#ff0060,#ff3e1d); padding:2px; animation:hf-spin 2s linear infinite; box-shadow:0 0 14px rgba(255,62,29,0.6); }
+        .hf-admin .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .hf-mod   .header-frame { border:2px solid var(--accent2); box-shadow:0 0 10px rgba(167,139,250,0.5); animation:hf-spin 5s linear infinite; }
+        .hf-default .header-frame { border:2px solid var(--accent); box-shadow:0 0 10px rgba(0,242,255,0.4); animation:hf-spin 4s linear infinite; }
+        .hf-fire  .header-frame { background: conic-gradient(#ff4500,#ff8c00,#ffd700,#ff4500); padding:2px; animation:hf-spin 1.5s linear infinite; box-shadow:0 0 14px rgba(255,69,0,0.7); }
+        .hf-fire  .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .hf-aurora .header-frame { background: conic-gradient(#00f2ff,#a78bfa,#00ff88,#ff6bff,#00f2ff); padding:2px; animation:hf-spin 6s linear infinite; box-shadow:0 0 14px rgba(0,242,255,0.4); }
+        .hf-aurora .header-frame::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--bg); }
+        .hf-galaxy .header-frame { border:2px solid transparent; background: linear-gradient(var(--bg),var(--bg)) padding-box, conic-gradient(#4a00e0,#8e2de2,#00c9ff,#4a00e0) border-box; animation:hf-spin 8s linear infinite; }
+        .hf-none  .header-frame { display:none; }
 
         @keyframes hf-spin { from { transform:translate(-50%,-50%) rotate(0deg); } to { transform:translate(-50%,-50%) rotate(360deg); } }
 
@@ -344,51 +281,6 @@
         }
         .bubble:active { transform: scale(0.97); }
 
-        /* ── Owner bubble ── */
-        .bubble-owner {
-            display: inline-block;
-            width: fit-content;
-            max-width: 100%;
-            position: relative;
-            padding: 10px 14px;
-            border-radius: 18px 18px 4px 18px;
-            background: linear-gradient(135deg, #1a1200, #2a1e00);
-            border: 1px solid rgba(255,215,0,0.3);
-            box-shadow: 0 0 14px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08);
-            cursor: pointer; transition: transform 0.1s;
-            overflow: visible;
-        }
-        .mine .bubble-owner { border-radius: 18px 18px 18px 4px; }
-        .bubble-owner:active { transform: scale(0.97); }
-        .bubble-owner::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.06), transparent);
-            border-radius: inherit;
-            animation: ownerShimmer 3.5s ease-in-out infinite;
-            pointer-events: none;
-        }
-        @keyframes ownerShimmer { 0% { left: -100%; } 100% { left: 200%; } }
-        .bubble-owner .crown-stamp {
-            position: absolute; top: -12px; right: -4px;
-            font-size: 13px; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7));
-            animation: crownBob 2.5s ease-in-out infinite; pointer-events: none;
-        }
-        @keyframes crownBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-        .bubble-owner .orn {
-            position: absolute; font-size: 8px; color: rgba(255,215,0,0.2); pointer-events: none; line-height: 1;
-        }
-        .orn-tl { top: 3px; left: 5px; }
-        .orn-bl { bottom: 3px; left: 5px; transform: scaleY(-1); }
-        .orn-br { bottom: 3px; right: 5px; transform: scale(-1,-1); }
-        .bubble-owner .bubble-content {
-            position: relative; z-index: 1;
-            color: #ffe88a; font-size: 14px; font-weight: 600;
-            line-height: 1.45; word-break: break-word;
-        }
-        .bubble-owner .gold-line {
-            display: block; width: 100%; height: 1px; margin-top: 5px;
-            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.15), transparent);
-        }
 
         /* Style 1: Default rounded */
         .bs-default .bubble {
@@ -461,12 +353,6 @@
             border: 1px solid rgba(0,242,255,0.15);
             border-radius: 16px 16px 4px 16px;
             color: white;
-        }
-
-        /* ── bubble-owner sizing override ── */
-        .bubble-owner {
-            min-width: 80px;
-            width: fit-content !important;
         }
 
         /* ── Deleted message ── */
@@ -911,6 +797,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
+    <link rel="stylesheet" href="staff-bubbles.css">
 </head>
 <body>
 
@@ -931,10 +818,10 @@
     <!-- Menu btn — absolute top-right -->
     <button class="h-action-btn header-menu-btn" id="menuBtn" title="More">⋮</button>
 
-    <!-- Avatar (frame system matches user-view.html exactly) -->
-    <div class="header-avatar-wrap frame-none" id="headerAvatarWrap" onclick="goToProfile()">
-        <div class="avatar-frame" id="avatarFrame"></div>
+    <!-- Avatar centered -->
+    <div class="header-avatar-wrap hf-none" id="headerAvatarWrap" onclick="goToProfile()">
         <div class="header-avatar-img" id="headerAvatarImg"></div>
+        <div class="header-frame" id="headerFrame"></div>
     </div>
 
     <!-- Name + badge -->

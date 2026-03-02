@@ -85,6 +85,7 @@ const FRAMES = [
         name:      'Owner Frame',
         category:  'staff',
         staffOnly: true,
+        ownerOnly: true,
         exclusive: '👑',
         preview:   buildOwnerFramePreview,
     },
@@ -109,6 +110,7 @@ const BUBBLES = [
         name:      'Owner Bubble',
         category:  'staff',
         staffOnly: true,
+        ownerOnly: true,
         exclusive: '👑',
         preview:   buildOwnerBubblePreview,
     },
@@ -132,6 +134,7 @@ function getCats(items) {
 
 function getVisibleItems(items, cat) {
     return items.filter(item => {
+        if (item.ownerOnly && !isOwner) return false;
         if (item.staffOnly && !isStaff()) return false;
         if (cat === 'all') return true;
         if (cat === null)  return item.category === null;

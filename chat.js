@@ -39,7 +39,7 @@ let currentBg   = 'black';    // current background theme
 let customBgURL = null;       // custom image URL
 let customDim   = 0.5;        // custom image dim level
 let messagesListener = null;
-let lastMessagesSnap  = null; // cached for re-render when bubble style changes
+let lastMessagesSnap  = null;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function esc(str) {
@@ -124,11 +124,9 @@ function applyFrame(wrapEl, uid, data) {
 }
 
 function getBubbleStyle(data, uid) {
-    // App owner always gets the owner bubble, UID-locked — cannot be equipped by others
-    if (uid && uid === OWNER_UID) return 'bubble-owner';
-    // Block anyone else from equipping bubble-owner
-    const equipped = data?.equippedBubble || 'bs-default';
-    return equipped === 'bubble-owner' ? 'bs-default' : equipped;
+    const equipped = data?.equippedBubble || null;
+    if (!equipped || equipped === 'default') return 'bs-default';
+    return equipped;
 }
 
 // ── AUTH + INIT ────────────────────────────────────────────────────────────
@@ -295,18 +293,16 @@ function renderHeader() {
 
 // ── ONLINE STATUS (real-time) ──────────────────────────────────────────────
 function listenOnlineStatus() {
-    // Listen to target — updates status, frame AND bubble in real time
+    // Target user — status + frame + their bubble all update in real time
     onValue(ref(db, `users/${targetUID}`), (snap) => {
         const data = snap.val() || {};
-
-        // Re-apply frame if changed
         targetData = { ...targetData, ...data };
+
         applyFrame(document.getElementById('headerAvatarWrap'), targetUID, targetData);
 
-        // Re-render messages if their bubble changed
-        const newBubbleStyle = getBubbleStyle(targetData, targetUID);
-        if (newBubbleStyle !== theirBubbleStyle) {
-            theirBubbleStyle = newBubbleStyle;
+        const newStyle = getBubbleStyle(targetData, targetUID);
+        if (newStyle !== theirBubbleStyle) {
+            theirBubbleStyle = newStyle;
             if (lastMessagesSnap) renderMessages(lastMessagesSnap);
         }
 
@@ -325,13 +321,13 @@ function listenOnlineStatus() {
         }
     });
 
-    // Listen to MY data — updates my bubble style in real time
+    // My own data — update my bubble style in real time
     onValue(ref(db, `users/${myUID}`), (snap) => {
         const data = snap.val() || {};
         myData = { ...myData, ...data };
-        const newBubbleStyle = getBubbleStyle(myData, myUID);
-        if (newBubbleStyle !== myBubbleStyle) {
-            myBubbleStyle = newBubbleStyle;
+        const newStyle = getBubbleStyle(myData, myUID);
+        if (newStyle !== myBubbleStyle) {
+            myBubbleStyle = newStyle;
             if (lastMessagesSnap) renderMessages(lastMessagesSnap);
         }
     });
@@ -395,7 +391,7 @@ function listenMessages() {
 
     const msgsRef = ref(db, `chats/${chatID}/messages`);
     messagesListener = onValue(msgsRef, (snap) => {
-        lastMessagesSnap = snap; // cache for bubble style re-renders
+        lastMessagesSnap = snap;
         renderMessages(snap);
         markRead();
     });
@@ -448,7 +444,8 @@ function renderMessages(snap) {
 function buildMessageRow(msgID, msg, isMine) {
     const bubbleStyle = isMine ? myBubbleStyle : theirBubbleStyle;
     const row = document.createElement('div');
-    row.className = `msg-row ${isMine ? 'mine' : ''} ${bubbleStyle}`;
+    const rowStyle = bubbleStyle === 'bubble-owner' ? 'bs-owner' : bubbleStyle;
+    row.className = `msg-row ${isMine ? 'mine' : ''} ${rowStyle}`;
     row.dataset.msgid = msgID;
 
     // Build message row — no avatar, pure bubbles
