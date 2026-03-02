@@ -124,9 +124,11 @@ function applyFrame(wrapEl, uid, data) {
 }
 
 function getBubbleStyle(data, uid) {
-    const equipped = data?.equippedBubble || null;
-    if (!equipped || equipped === 'default') return 'bs-default';
-    return equipped;
+    // App owner always gets the owner bubble, UID-locked — cannot be equipped by others
+    if (uid && uid === OWNER_UID) return 'bubble-owner';
+    // Block anyone else from equipping bubble-owner
+    const equipped = data?.equippedBubble || 'bs-default';
+    return equipped === 'bubble-owner' ? 'bs-default' : equipped;
 }
 
 // ── AUTH + INIT ────────────────────────────────────────────────────────────
@@ -296,7 +298,7 @@ function listenOnlineStatus() {
     // Target user — status + frame + their bubble all update in real time
     onValue(ref(db, `users/${targetUID}`), (snap) => {
         const data = snap.val() || {};
-        targetData = { ...targetData, ...data };
+        targetData = data; // full replace — deleted fields (like equippedBubble) must not survive
 
         applyFrame(document.getElementById('headerAvatarWrap'), targetUID, targetData);
 
@@ -324,7 +326,7 @@ function listenOnlineStatus() {
     // My own data — update my bubble style in real time
     onValue(ref(db, `users/${myUID}`), (snap) => {
         const data = snap.val() || {};
-        myData = { ...myData, ...data };
+        myData = data; // full replace — deleted fields must not survive
         const newStyle = getBubbleStyle(myData, myUID);
         if (newStyle !== myBubbleStyle) {
             myBubbleStyle = newStyle;
